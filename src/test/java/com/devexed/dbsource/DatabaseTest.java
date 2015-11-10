@@ -1,3 +1,5 @@
+package com.devexed.dbsource;
+
 import com.devexed.dbsource.*;
 import org.junit.Before;
 import org.junit.Test;
