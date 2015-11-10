@@ -1,0 +1,22 @@
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group 'com.devexed.dbsource'
+version '1.0'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile fileTree(dir: 'src/test/resources', include: '*.jar')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
