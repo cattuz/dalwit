@@ -1,8 +1,10 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.*;
+import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.Query;
+import com.devexed.dbsource.Transaction;
+import com.devexed.dbsource.UpdateStatement;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 final class JdbcUpdateStatement extends JdbcStatement implements UpdateStatement {

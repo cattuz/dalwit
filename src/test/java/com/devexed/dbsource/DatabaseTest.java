@@ -56,7 +56,7 @@ public abstract class DatabaseTest {
         // Query to confirm committal.
         Cursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
-        assertEquals((long) cursor.get("a"), 123);
+        assertEquals((long) cursor.<Long>get("a"), 123);
         assertEquals(cursor.get("b"), "text");
         assertFalse(cursor.next());
         cursor.close();
@@ -84,7 +84,7 @@ public abstract class DatabaseTest {
         InsertStatement insertStatement = db.prepareInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
         Cursor keyCursor = insertStatement.insert(transaction);
-        Set<Long> keyList = new HashSet<>();
+        HashSet<Long> keyList = new HashSet<Long>();
 
         while (keyCursor.next()) keyList.add(keyCursor.<Long>get("id"));
 

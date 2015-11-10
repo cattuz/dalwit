@@ -1,10 +1,10 @@
 package com.devexed.dbsource.jdbc;
 
+import com.devexed.dbsource.*;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
-
-import com.devexed.dbsource.*;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements TransactionDatabase {
 

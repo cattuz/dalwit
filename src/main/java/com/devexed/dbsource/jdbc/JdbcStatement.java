@@ -1,29 +1,29 @@
 package com.devexed.dbsource.jdbc;
 
+import com.devexed.dbsource.*;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.devexed.dbsource.*;
-
 abstract class JdbcStatement extends AbstractCloseable implements Statement {
-
-    private final HashMap<String, int[]> parameterIndexes;
 
     final JdbcAbstractDatabase database;
     final Query query;
 	final PreparedStatement statement;
     final LinkedHashMap<String, Class<?>> keys;
 
+    private final HashMap<String, int[]> parameterIndexes;
+
     JdbcStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
         this.database = database;
         this.query = query;
 
         try {
-            parameterIndexes = new HashMap<>();
-            this.keys = new LinkedHashMap<>();
+            parameterIndexes = new HashMap<String, int[]>();
+            this.keys = new LinkedHashMap<String, Class<?>>();
 
             if (keys != null) this.keys.putAll(keys);
 

@@ -4,9 +4,11 @@ import com.devexed.dbsource.Cursor;
 import com.devexed.dbsource.Database;
 import com.devexed.dbsource.DatabaseException;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * <p>Incomplete implementation of generated key selection where a single function is used to get the identity value of
@@ -52,10 +54,10 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
                 "SELECT " + lastGeneratedIdFunction + " AS " +
                 "\"" + key.replace("\"", "\"\"") + "\"");
 
-        return new ResultSetCursor(new Function<String, JdbcAccessor>() {
+        return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
 
             @Override
-            public JdbcAccessor apply(String name) {
+            public JdbcAccessor accessorOf(String name) {
                 return accessors.get(keys.get(name));
             }
 

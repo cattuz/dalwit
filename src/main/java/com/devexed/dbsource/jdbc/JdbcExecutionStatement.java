@@ -1,8 +1,10 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.*;
+import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.ExecutionStatement;
+import com.devexed.dbsource.Query;
+import com.devexed.dbsource.Transaction;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 final class JdbcExecutionStatement extends JdbcStatement implements ExecutionStatement {

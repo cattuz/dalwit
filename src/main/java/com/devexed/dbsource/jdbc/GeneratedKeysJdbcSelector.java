@@ -7,7 +7,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Can be used as a key accessor when the JDBC driver fully supports generated keys.
@@ -24,10 +23,10 @@ public final class GeneratedKeysJdbcSelector implements GeneratedKeysSelector {
     public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
                                       final Map<Class<?>, JdbcAccessor> accessors, final Map<String, Class<?>> keys)
             throws SQLException {
-        return new ResultSetCursor(new Function<String, JdbcAccessor>() {
+        return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
 
             @Override
-            public JdbcAccessor apply(String name) {
+            public JdbcAccessor accessorOf(String name) {
                 return accessors.get(keys.get(name));
             }
 

@@ -1,6 +1,9 @@
 package com.devexed.dbsource;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /** Helpers for building database engine independent queries. */
@@ -87,7 +90,7 @@ public final class Queries {
 
     public static final class QueryBuilder {
 
-        private final ArrayList<QueryPermutation> permutations = new ArrayList<>();
+        private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
         private String defaultQuery = null;
 
         private QueryBuilder() {}
@@ -193,7 +196,7 @@ public final class Queries {
     public static String parseParameterQuery(String query, Map<String, int[]> parameterIndexes) {
         final StringBuilder queryBuilder = new StringBuilder();
         final StringBuilder parameterBuilder = new StringBuilder();
-        final HashMap<String, ArrayList<Integer>> parameterMapBuilder = new HashMap<>();
+        final HashMap<String, ArrayList<Integer>> parameterMapBuilder = new HashMap<String, ArrayList<Integer>>();
         int currentIndex = 0;
 
         /* Various ranges where parameters aren't parsed. Handling escaped characters inside the ranges is unnecessary
@@ -268,7 +271,7 @@ public final class Queries {
                     ArrayList<Integer> indexes = parameterMapBuilder.get(parameter);
 
                     if (indexes == null) {
-                        indexes = new ArrayList<>();
+                        indexes = new ArrayList<Integer>();
                         parameterMapBuilder.put(parameter, indexes);
                     }
 

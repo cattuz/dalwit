@@ -1,8 +1,5 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.DatabaseException;
-import com.devexed.dbsource.Transaction;
-
 import java.sql.SQLException;
 
 final class JdbcRootTransaction extends JdbcTransaction {

@@ -1,21 +1,28 @@
 package com.devexed.dbsource.jdbc;
 
+import com.devexed.dbsource.AbstractCloseable;
+import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Function;
-
-import com.devexed.dbsource.*;
 
 final class ResultSetCursor extends AbstractCloseable implements Cursor {
+
+	public interface AccessorFunction {
+
+		JdbcAccessor accessorOf(String column);
+
+	}
 	
 	private static int columnIndexOf(int index) {
 		return index + 1;
 	}
 
-    private final Function<String, JdbcAccessor> typeOfFunction;
+    private final AccessorFunction typeOfFunction;
 	private final ResultSet cursor;
 	
-	ResultSetCursor(Function<String, JdbcAccessor> typeOfFunction, ResultSet cursor) {
+	ResultSetCursor(AccessorFunction typeOfFunction, ResultSet cursor) {
 		this.typeOfFunction = typeOfFunction;
 		this.cursor = cursor;
 	}
@@ -40,7 +47,7 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
             int index = cursor.findColumn(column);
 
             try {
-                JdbcAccessor accessor = typeOfFunction.apply(column);
+                JdbcAccessor accessor = typeOfFunction.accessorOf(column);
 
                 if (accessor == null) throw new DatabaseException("No accessor is defined for column " + column);
 

@@ -1,7 +1,5 @@
 package com.devexed.dbsource;
 
-import com.devexed.dbsource.DatabaseException;
-
 import java.io.Closeable;
 
 /**

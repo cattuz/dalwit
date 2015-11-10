@@ -1,7 +1,6 @@
 package com.devexed.dbsource;
 
 import java.io.Closeable;
-import java.util.Collections;
 
 /**
  * <p>A cursor with rows accessed sequentially through iteration. Cursor instances always start off pointing before the

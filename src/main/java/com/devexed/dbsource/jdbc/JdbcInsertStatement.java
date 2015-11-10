@@ -2,9 +2,7 @@ package com.devexed.dbsource.jdbc;
 
 import com.devexed.dbsource.*;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 final class JdbcInsertStatement extends JdbcStatement implements InsertStatement {

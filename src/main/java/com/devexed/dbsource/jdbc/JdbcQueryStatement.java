@@ -1,9 +1,11 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.*;
+import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.Query;
+import com.devexed.dbsource.QueryStatement;
 
 import java.sql.SQLException;
-import java.util.function.Function;
 
 final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 
@@ -16,10 +18,10 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 		checkNotClosed();
 
 		try {
-			return new ResultSetCursor(new Function<String, JdbcAccessor>() {
+			return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
 
 				@Override
-				public JdbcAccessor apply(String column) {
+				public JdbcAccessor accessorOf(String column) {
 					return database.accessors.get(query.typeOf(column));
 				}
 
