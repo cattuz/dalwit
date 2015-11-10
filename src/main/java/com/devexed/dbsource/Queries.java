@@ -3,7 +3,7 @@ package com.devexed.dbsource;
 import java.util.*;
 import java.util.regex.Pattern;
 
-/** Helpers for building of database engine independent queries. */
+/** Helpers for building database engine independent queries. */
 public final class Queries {
 
     private static abstract class QueryPermutation {
