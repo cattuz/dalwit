@@ -1,8 +1,13 @@
-build/
+# Intellij project files
+.idea/
+*.iml
+*.log
+
+# Gradle runtime
 .gradle/
 gradle/
 gradlew
 gradlew.bat
-.idea/
-*.iml
-*.log
+
+# Build output
+build/
