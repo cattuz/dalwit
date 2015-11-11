@@ -1,6 +1,10 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 
+// Enforce 1.6 to maintain android compatibility.
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
 group 'com.devexed.dbsource'
 version '1.0'
 
@@ -17,17 +21,21 @@ configurations {
     testArtifacts.extendsFrom testRuntime
 }
 
+task sourceJar(type: Jar) {
+    classifier "sources"
+    from sourceSets.main.allJava
+}
+
 task testJar(type: Jar) {
-    classifier "test"
+    classifier "tests"
     from sourceSets.test.output
 }
 
 publishing {
     publications {
-        library(MavenPublication) {
+        mavenJava(MavenPublication) {
             from components.java
-        }
-        tests(MavenPublication) {
+            artifact(sourceJar)
             artifact(testJar)
         }
     }

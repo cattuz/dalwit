@@ -32,11 +32,9 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
 		checkNotClosed();
 	}
 
-    abstract void jdbcCommit() throws SQLException;
+    abstract void commitTransaction() throws SQLException;
 
-    abstract void jdbcRollback() throws SQLException;
-
-    abstract void jdbcClose() throws SQLException;
+    abstract void rollbackTransaction() throws SQLException;
 
     void closeActiveTransaction() {
         if (!hasChild) throw new DatabaseException("Child transaction already closed.");
@@ -56,7 +54,7 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
         checkActive();
 
         try {
-            jdbcCommit();
+            commitTransaction();
             committed = true;
         } catch (SQLException e) {
             throw new DatabaseException(e);
@@ -64,13 +62,12 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     }
 
     @Override
-    public final void close() {
+    public void close() {
         checkNotClosed();
         checkChildClosed();
 
         try {
-            if (!committed) jdbcRollback();
-            jdbcClose();
+            if (!committed) rollbackTransaction();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

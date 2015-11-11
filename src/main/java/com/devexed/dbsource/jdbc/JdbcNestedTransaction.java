@@ -26,18 +26,19 @@ final class JdbcNestedTransaction extends JdbcTransaction {
 	}
 
 	@Override
-	void jdbcCommit() throws SQLException {
+	void commitTransaction() throws SQLException {
 		connection.releaseSavepoint(savepoint);
 	}
 
 	@Override
-	void jdbcRollback() throws SQLException {
+	void rollbackTransaction() throws SQLException {
 		connection.rollback(savepoint);
 	}
 
-    @Override
-    void jdbcClose() throws SQLException {
-        parent.closeActiveTransaction();
-    }
+	@Override
+	public void close() {
+		parent.closeActiveTransaction();
+		super.close();
+	}
 
 }

@@ -13,16 +13,13 @@ final class JdbcRootTransaction extends JdbcTransaction {
 	}
 
     @Override
-    void jdbcCommit() throws SQLException {
+    void commitTransaction() throws SQLException {
         connection.commit();
     }
 
     @Override
-    void jdbcRollback() throws SQLException {
+    void rollbackTransaction() throws SQLException {
         connection.rollback();
     }
-
-    @Override
-    void jdbcClose() throws SQLException {}
 
 }
