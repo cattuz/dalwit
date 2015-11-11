@@ -49,21 +49,21 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Transac
 	}
 
 	@Override
-	public UpdateStatement prepareUpdate(Query query) {
+	public UpdateStatement createUpdate(Query query) {
 		checkNotClosed();
 
         return new JdbcUpdateStatement(this, query);
 	}
 
 	@Override
-	public ExecutionStatement prepareExecution(Query query) {
+	public ExecutionStatement createExecution(Query query) {
 		checkNotClosed();
 
         return new JdbcExecutionStatement(this, query);
 	}
 
 	@Override
-	public InsertStatement prepareInsert(Query query, Map<String, Class<?>> keys) {
+	public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
 		checkNotClosed();
 
         return new JdbcInsertStatement(this, query, keys);

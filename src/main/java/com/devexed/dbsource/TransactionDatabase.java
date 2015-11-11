@@ -11,7 +11,7 @@ public interface TransactionDatabase extends Database {
 	 * @param query The SQL statement. E.g. insert, update, delete.
 	 * @return The prepared statement.
 	 */
-	UpdateStatement prepareUpdate(Query query);
+	UpdateStatement createUpdate(Query query);
 
 	/**
 	 * Prepares an SQL statement which executes a statement on
@@ -20,7 +20,7 @@ public interface TransactionDatabase extends Database {
 	 * @param query The SQL statement.
 	 * @return The prepared insert statement.
 	 */
-	ExecutionStatement prepareExecution(Query query);
+	ExecutionStatement createExecution(Query query);
 
 	/**
 	 * Prepares an SQL statement which inserts rows into a table,
@@ -30,7 +30,7 @@ public interface TransactionDatabase extends Database {
 	 * @param keys The key columns to return in the cursor of generated keys.
 	 * @return The prepared insert statement.
 	 */
-	InsertStatement prepareInsert(Query query, Map<String, Class<?>> keys);
+	InsertStatement createInsert(Query query, Map<String, Class<?>> keys);
 
 	/**
 	 * Start a transaction to update the database.

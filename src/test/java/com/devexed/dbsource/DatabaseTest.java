@@ -42,8 +42,8 @@ public abstract class DatabaseTest {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.prepareExecution(createTable).execute(transaction);
-        UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
+        db.createExecution(createTable).execute(transaction);
+        UpdateStatement updateStatement = db.createUpdate(insertQuery);
         updateStatement.bind("a", (long) 123);
         updateStatement.bind("b", "text");
         assertEquals(1, updateStatement.update(transaction));
@@ -80,8 +80,8 @@ public abstract class DatabaseTest {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.prepareExecution(createTable).execute(transaction);
-        InsertStatement insertStatement = db.prepareInsert(insertQuery, keys);
+        db.createExecution(createTable).execute(transaction);
+        InsertStatement insertStatement = db.createInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
         DatabaseCursor keyCursor = insertStatement.insert(transaction);
         HashSet<Long> keyList = new HashSet<Long>();
@@ -120,12 +120,12 @@ public abstract class DatabaseTest {
 
         // Start parent transaction.
         Transaction transaction = db.transact();
-        transaction.prepareExecution(createTable).execute(transaction);
+        transaction.createExecution(createTable).execute(transaction);
 
         // Committed child transaction.
         {
             Transaction committedTransaction = transaction.transact();
-            UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
+            UpdateStatement updateStatement = db.createUpdate(insertQuery);
             updateStatement.bind("a", "should be committed");
             assertEquals(1, updateStatement.update(committedTransaction));
             committedTransaction.commit();
@@ -135,7 +135,7 @@ public abstract class DatabaseTest {
         // Uncommitted child transaction.
         {
             Transaction uncommittedTransaction = transaction.transact();
-            UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
+            UpdateStatement updateStatement = db.createUpdate(insertQuery);
             updateStatement.bind("a", "should not be committed");
             assertEquals(1, updateStatement.update(uncommittedTransaction));
             uncommittedTransaction.close();
@@ -185,8 +185,8 @@ public abstract class DatabaseTest {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.prepareExecution(createTable).execute(transaction);
-        UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
+        db.createExecution(createTable).execute(transaction);
+        UpdateStatement updateStatement = db.createUpdate(insertQuery);
         updateStatement.bind("n", value);
         assertEquals(1, updateStatement.update(transaction));
         transaction.commit();
