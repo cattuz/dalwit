@@ -1,6 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseCursor;
 import com.devexed.dbsource.Database;
 
 import java.sql.Connection;
@@ -20,7 +20,7 @@ public final class GeneratedKeysJdbcSelector implements GeneratedKeysSelector {
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
+    public DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement,
                                       final Map<Class<?>, JdbcAccessor> accessors, final Map<String, Class<?>> keys)
             throws SQLException {
         return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {

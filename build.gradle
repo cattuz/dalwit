@@ -13,10 +13,22 @@ dependencies {
     testCompile fileTree(dir: 'src/test/resources', include: '*.jar')
 }
 
+configurations {
+    testArtifacts.extendsFrom testRuntime
+}
+
+task testJar(type: Jar) {
+    classifier "test"
+    from sourceSets.test.output
+}
+
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        library(MavenPublication) {
             from components.java
+        }
+        tests(MavenPublication) {
+            artifact(testJar)
         }
     }
 }

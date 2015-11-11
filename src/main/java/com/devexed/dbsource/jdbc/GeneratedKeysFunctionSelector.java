@@ -1,6 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseCursor;
 import com.devexed.dbsource.Database;
 import com.devexed.dbsource.DatabaseException;
 
@@ -40,14 +40,14 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
+    public DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement,
                                       final Map<Class<?>, JdbcAccessor> accessors,
                                       final Map<String, Class<?>> keys) throws SQLException {
         assertSingletonKeyMap(keys);
         String key = keys.keySet().iterator().next();
         Class<?> type = keys.get(key);
 
-        if (type != Long.TYPE) throw new DatabaseException("Generated key column must be of Long.TYPE");
+        if (type != Long.TYPE) throw new DatabaseException("Generated key column must be of type Long.TYPE");
 
         // Select last inserted id as key.
         ResultSet results = statement.getConnection().createStatement().executeQuery(

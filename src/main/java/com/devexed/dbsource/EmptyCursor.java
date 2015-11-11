@@ -3,11 +3,11 @@ package com.devexed.dbsource;
 /**
  * An empty cursor. The cursor has no columns or rows.
  */
-public final class EmptyCursor extends AbstractCloseable implements Cursor {
+public final class EmptyCursor extends AbstractCloseable implements DatabaseCursor {
 
 	private static final EmptyCursor instance = new EmptyCursor();
 
-	public static Cursor of() {
+	public static DatabaseCursor of() {
 		return instance;
 	}
 

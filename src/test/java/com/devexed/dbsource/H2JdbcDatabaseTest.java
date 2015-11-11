@@ -16,7 +16,7 @@ public final class H2JdbcDatabaseTest extends DatabaseTest {
     public TemporaryFolder dbFolder = new TemporaryFolder();
 
     @Override
-    TransactionDatabase openTransactionDatabase() {
+    public TransactionDatabase openTransactionDatabase() {
         try {
             Class.forName("org.h2.Driver");
         } catch (ClassNotFoundException e) {

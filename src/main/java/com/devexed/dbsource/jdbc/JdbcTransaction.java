@@ -47,12 +47,8 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     public final Transaction transact() {
         checkActive();
 
-        try {
-            hasChild = true;
-            return new JdbcNestedTransaction(this, connection.setSavepoint());
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
+        hasChild = true;
+        return new JdbcNestedTransaction(this);
     }
 
     @Override

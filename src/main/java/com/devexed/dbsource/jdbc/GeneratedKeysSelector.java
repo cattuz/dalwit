@@ -1,6 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseCursor;
 import com.devexed.dbsource.Database;
 
 import java.sql.Connection;
@@ -16,7 +16,7 @@ public interface GeneratedKeysSelector {
     PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
                                              Map<String, Class<?>> keys) throws SQLException;
 
-    Cursor selectGeneratedKeys(Database database, PreparedStatement statement, Map<Class<?>,
+    DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement, Map<Class<?>,
             JdbcAccessor> accessors, Map<String, Class<?>> keys) throws SQLException;
 
 }

@@ -11,13 +11,13 @@ import java.util.Properties;
 
 import static org.junit.Assert.fail;
 
-public final class SqliteJdbcDatabaseTest extends DatabaseTest {
+public final class SQLiteJdbcDatabaseTest extends DatabaseTest {
 
     @Rule
     public TemporaryFolder dbFolder = new TemporaryFolder();
 
     @Override
-    TransactionDatabase openTransactionDatabase() {
+    public TransactionDatabase openTransactionDatabase() {
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {

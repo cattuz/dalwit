@@ -1,13 +1,13 @@
 package com.devexed.dbsource.jdbc;
 
 import com.devexed.dbsource.AbstractCloseable;
-import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.DatabaseCursor;
 import com.devexed.dbsource.DatabaseException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-final class ResultSetCursor extends AbstractCloseable implements Cursor {
+final class ResultSetCursor extends AbstractCloseable implements DatabaseCursor {
 
 	public interface AccessorFunction {
 
@@ -26,7 +26,7 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
 		this.typeOfFunction = typeOfFunction;
 		this.cursor = cursor;
 	}
-	
+
 	@Override
 	public boolean next() {
 		checkNotClosed();

@@ -1,6 +1,5 @@
 package com.devexed.dbsource;
 
-import com.devexed.dbsource.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -12,7 +11,7 @@ public abstract class DatabaseTest {
 
     TransactionDatabase db;
 
-    abstract TransactionDatabase openTransactionDatabase();
+    public abstract TransactionDatabase openTransactionDatabase();
 
     private void reopenDatabase() {
         db.close();
@@ -54,7 +53,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Query to confirm committal.
-        Cursor cursor = db.createQuery(selectQuery).query();
+        DatabaseCursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
         assertEquals((long) cursor.<Long>get("a"), 123);
         assertEquals(cursor.get("b"), "text");
@@ -83,7 +82,7 @@ public abstract class DatabaseTest {
         db.prepareExecution(createTable).execute(transaction);
         InsertStatement insertStatement = db.prepareInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
-        Cursor keyCursor = insertStatement.insert(transaction);
+        DatabaseCursor keyCursor = insertStatement.insert(transaction);
         HashSet<Long> keyList = new HashSet<Long>();
 
         while (keyCursor.next()) keyList.add(keyCursor.<Long>get("id"));
@@ -96,7 +95,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Query to confirm only the inserted keys exist in the table.
-        Cursor cursor = db.createQuery(selectQuery).query();
+        DatabaseCursor cursor = db.createQuery(selectQuery).query();
         int containedKeyCount = 0;
 
         while (cursor.next()) {
@@ -149,7 +148,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Ensure only committed child transaction was stored.
-        Cursor cursor = db.createQuery(selectQuery).query();
+        DatabaseCursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
         assertEquals(cursor.get("a"), "should be committed");
         assertFalse(cursor.next());

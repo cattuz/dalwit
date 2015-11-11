@@ -95,6 +95,11 @@ public final class Queries {
 
         private QueryBuilder() {}
 
+        public QueryBuilder forType(String type, String query) {
+            permutations.add(new TypeQueryPermutation(type, query));
+            return this;
+        }
+
         public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
             permutations.add(new PatternQueryPermutation(type, versionPattern, query));
             return this;
@@ -102,11 +107,6 @@ public final class Queries {
 
         public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
             permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
-            return this;
-        }
-
-        public QueryBuilder forType(String type, String query) {
-            permutations.add(new TypeQueryPermutation(type, query));
             return this;
         }
 
