@@ -3,6 +3,7 @@ package com.devexed.dbsource;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -11,16 +12,16 @@ public abstract class DatabaseTest {
 
     TransactionDatabase db;
 
-    public abstract TransactionDatabase openTransactionDatabase();
+    public abstract TransactionDatabase openDatabase();
 
     private void reopenDatabase() {
         db.close();
-        db = openTransactionDatabase();
+        db = openDatabase();
     }
 
     @Before
     public void setUp() {
-        db = openTransactionDatabase();
+        db = openDatabase();
     }
 
     @Test
@@ -45,7 +46,7 @@ public abstract class DatabaseTest {
         UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
         updateStatement.bind("a", (long) 123);
         updateStatement.bind("b", "text");
-        assertEquals(updateStatement.update(transaction), 1);
+        assertEquals(1, updateStatement.update(transaction));
         transaction.commit();
         transaction.close();
 
@@ -55,8 +56,8 @@ public abstract class DatabaseTest {
         // Query to confirm committal.
         DatabaseCursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
-        assertEquals((long) cursor.<Long>get("a"), 123);
-        assertEquals(cursor.get("b"), "text");
+        assertEquals(123, (long) cursor.<Long>get("a"));
+        assertEquals("text", cursor.get("b"));
         assertFalse(cursor.next());
         cursor.close();
     }
@@ -102,7 +103,7 @@ public abstract class DatabaseTest {
             if (keyList.contains(cursor.<Long>get("id"))) containedKeyCount++;
         }
 
-        assertEquals(containedKeyCount, keyList.size());
+        assertEquals(keyList.size(), containedKeyCount);
         assertFalse(cursor.next());
         cursor.close();
     }
@@ -126,7 +127,7 @@ public abstract class DatabaseTest {
             Transaction committedTransaction = transaction.transact();
             UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
             updateStatement.bind("a", "should be committed");
-            assertEquals(updateStatement.update(committedTransaction), 1);
+            assertEquals(1, updateStatement.update(committedTransaction));
             committedTransaction.commit();
             committedTransaction.close();
         }
@@ -136,7 +137,7 @@ public abstract class DatabaseTest {
             Transaction uncommittedTransaction = transaction.transact();
             UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
             updateStatement.bind("a", "should not be committed");
-            assertEquals(updateStatement.update(uncommittedTransaction), 1);
+            assertEquals(1, updateStatement.update(uncommittedTransaction));
             uncommittedTransaction.close();
         }
 
@@ -150,7 +151,7 @@ public abstract class DatabaseTest {
         // Ensure only committed child transaction was stored.
         DatabaseCursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
-        assertEquals(cursor.get("a"), "should be committed");
+        assertEquals("should be committed", cursor.get("a"));
         assertFalse(cursor.next());
         cursor.close();
     }
@@ -165,6 +166,41 @@ public abstract class DatabaseTest {
         } catch (DatabaseException e) {
             // Should succeed if an exception occurs.
         }
+    }
+
+    @Test
+    public void storeBigDecimal() {
+        BigDecimal value = new BigDecimal("12112399213.2132991321321323324132132132112213213213");
+
+        HashMap<String, Class<?>> columnTypes = new HashMap<String, Class<?>>() {{
+            put("n", BigDecimal.class);
+        }};
+
+        Query createTable = Queries.builder()
+                .forType("H2",      "CREATE TABLE t4 (n TEXT)")
+                .forType("SQLite",  "CREATE TABLE t4 (n TEXT)")
+                .build();
+        Query insertQuery = Queries.of("INSERT INTO t4 (n) VALUES (:n)", columnTypes);
+        Query selectQuery = Queries.of("SELECT n FROM t4", columnTypes);
+
+        // Create table and insert a row.
+        Transaction transaction = db.transact();
+        db.prepareExecution(createTable).execute(transaction);
+        UpdateStatement updateStatement = db.prepareUpdate(insertQuery);
+        updateStatement.bind("n", value);
+        assertEquals(1, updateStatement.update(transaction));
+        transaction.commit();
+        transaction.close();
+
+        // Close and reopen database to ensure data persistence.
+        reopenDatabase();
+
+        // Query to confirm committal.
+        DatabaseCursor cursor = db.createQuery(selectQuery).query();
+        assertTrue(cursor.next());
+        assertEquals(value, cursor.get("n"));
+        assertFalse(cursor.next());
+        cursor.close();
     }
 
 }

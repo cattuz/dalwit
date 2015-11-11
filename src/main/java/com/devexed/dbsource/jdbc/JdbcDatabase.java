@@ -5,7 +5,9 @@ import com.devexed.dbsource.DatabaseException;
 import com.devexed.dbsource.Transaction;
 import com.devexed.dbsource.TransactionDatabase;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +21,7 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
      * The primitive classes (e.g. Integer.TYPE) are non-nullable while the boxed primitives classes are nullable.
      *
      * Includes accessors for all primitives and additionally supports {@link String}, {@link Date}, {@link BigDecimal}
-     * and byte[].
+     * {@link InputStream} and byte[].
      */
     public static final Map<Class<?>, JdbcAccessor> accessors = new HashMap<Class<?>, JdbcAccessor>() {{
         put(Boolean.TYPE, new JdbcAccessor() {
@@ -217,6 +219,18 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
                 return resultSet.getTimestamp(index);
             }
         });
+        put(BigInteger.class, new JdbcAccessor() {
+            @Override
+            public void set(PreparedStatement statement, int index, Object value) throws SQLException {
+                if (value == null) statement.setBigDecimal(index, null);
+                else statement.setBigDecimal(index, new BigDecimal((BigInteger) value));
+            }
+            @Override
+            public Object get(ResultSet resultSet, int index) throws SQLException {
+                BigDecimal v = resultSet.getBigDecimal(index);
+                return v != null ? v.unscaledValue() : null;
+            }
+        });
         put(BigDecimal.class, new JdbcAccessor() {
             @Override
             public void set(PreparedStatement statement, int index, Object value) throws SQLException {
@@ -235,6 +249,17 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
             @Override
             public Object get(ResultSet resultSet, int index) throws SQLException {
                 return resultSet.getBytes(index);
+            }
+        });
+        put(InputStream.class, new JdbcAccessor() {
+            @Override
+            public void set(PreparedStatement statement, int index, Object value) throws SQLException {
+                InputStream is = (InputStream) value;
+                statement.setBinaryStream(index, is);
+            }
+            @Override
+            public Object get(ResultSet resultSet, int index) throws SQLException {
+                return resultSet.getBinaryStream(index);
             }
         });
     }};

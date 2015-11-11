@@ -17,7 +17,7 @@ public final class SQLiteJdbcDatabaseTest extends DatabaseTest {
     public TemporaryFolder dbFolder = new TemporaryFolder();
 
     @Override
-    public TransactionDatabase openTransactionDatabase() {
+    public TransactionDatabase openDatabase() {
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
