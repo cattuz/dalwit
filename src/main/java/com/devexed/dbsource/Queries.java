@@ -279,8 +279,9 @@ public final class Queries {
                     currentIndex++;
                     queryBuilder.append('?');
 
-                    // Append character after the named parameter.
-                    c = query.charAt(i);
+                    // Let outer loop increment to correct position.
+                    i--;
+                    continue;
                 }
             }
 
