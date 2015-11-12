@@ -1,8 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.DatabaseCursor;
-import com.devexed.dbsource.Database;
-import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,16 +24,16 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
         this.lastGeneratedIdFunction = lastGeneratedIdFunction;
     }
 
-    private void assertSingletonKeyMap(Map<String, Class<?>> keys) {
-        if (keys.size() > 1)
-            throw new DatabaseException("Only a single generated key column is supported.");
-    }
-
     @Override
     public PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
                                                     Map<String, Class<?>> keys) throws SQLException {
-        // No keys need to be returned as the selection of generated keys is manual.
-        assertSingletonKeyMap(keys);
+        if (keys.size() > 1) throw new DatabaseException("Only a single generated key column is supported.");
+
+        String key = keys.keySet().iterator().next();
+        Class<?> type = keys.get(key);
+
+        if (type != Long.TYPE) throw new DatabaseException("Generated key column must be of type Long.TYPE");
+
         return connection.prepareStatement(sql);
     }
 
@@ -43,25 +41,36 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
     public DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement,
                                       final Map<Class<?>, JdbcAccessor> accessors,
                                       final Map<String, Class<?>> keys) throws SQLException {
-        assertSingletonKeyMap(keys);
-        String key = keys.keySet().iterator().next();
-        Class<?> type = keys.get(key);
-
-        if (type != Long.TYPE) throw new DatabaseException("Generated key column must be of type Long.TYPE");
-
         // Select last inserted id as key.
-        ResultSet results = statement.getConnection().createStatement().executeQuery(
-                "SELECT " + lastGeneratedIdFunction + " AS " +
-                "\"" + key.replace("\"", "\"\"") + "\"");
+        final String key = keys.keySet().iterator().next();
+        final long generatedKey;
+        ResultSet results = null;
 
-        return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
+        try {
+            results = statement.getConnection().createStatement().executeQuery("SELECT " + lastGeneratedIdFunction);
+            if (!results.next()) return EmptyCursor.of();
+            generatedKey = results.getLong(1);
+        } finally {
+            if (results != null) results.close();
+        }
+
+        return new MockCursor<Long>(new MockCursor.Getter() {
 
             @Override
-            public JdbcAccessor accessorOf(String name) {
-                return accessors.get(keys.get(name));
+            public boolean next(int index) {
+                return index < 0;
             }
 
-        }, results);
+            @Override
+            @SuppressWarnings("unchecked")
+            public <E> E get(int index, String column) {
+                if (!key.equals(column))
+                    throw new DatabaseException("Column must be key column " + key);
+
+                return (E) (Long) generatedKey;
+            }
+
+        });
     }
 
 }

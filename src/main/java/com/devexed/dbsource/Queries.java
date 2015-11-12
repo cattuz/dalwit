@@ -88,6 +88,9 @@ public final class Queries {
 
     }
 
+    /**
+     * A builder for complex queries.
+     */
     public static final class QueryBuilder {
 
         private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
@@ -95,30 +98,64 @@ public final class Queries {
 
         private QueryBuilder() {}
 
+        /**
+         * Add a query permutation only applicable to a certain database type.
+         *
+         * @param type The database type for which the query is used.
+         * @param query The query to use for this permutation.
+         */
         public QueryBuilder forType(String type, String query) {
             permutations.add(new TypeQueryPermutation(type, query));
             return this;
         }
 
+        /**
+         * Add a query permutation only applicable to a certain database type whose version string matches a certain
+         * regular expression.
+         *
+         * @param type The database type for which the query is used.
+         * @param versionPattern The regular expression pattern to match against the database version.
+         * @param query The query to use for this permutation.
+         */
         public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
             permutations.add(new PatternQueryPermutation(type, versionPattern, query));
             return this;
         }
 
+        /**
+         * Add a query permutation only applicable to a certain database type whose version string interpreted as a
+         * series of point-separated numbers is, in order, larger or equal to each of the integers in the minimum
+         * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
+         * but not "1.2" or "2.5.3".
+         *
+         * @param type The database type for which the query is used.
+         * @param minimumVersion The regular expression pattern to match against the database version.
+         * @param query The query to use for this permutation.
+         */
         public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
             permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
             return this;
         }
 
+        /**
+         * Supplies the fallback query to use when no other permutation matches.
+         * @param query The query to use as fallback.
+         */
         public QueryBuilder forDefault(String query) {
             defaultQuery = query;
             return this;
         }
 
+        /** Build the query with no selected columns or parameters. */
         public Query build() {
             return build(Collections.<String, Class<?>>emptyMap());
         }
 
+        /**
+         * Build the query with selected columns and parameters types.
+         *
+         * @param types The types of the selected columns and parameters in the query.
+         */
         public Query build(final Map<String, Class<?>> types) {
             return new Query() {
 
@@ -150,10 +187,22 @@ public final class Queries {
 
     }
 
+    /**
+     * Builds a potentially complex query to handle multiple database types and versions.
+     *
+     * @return A query builder.
+     */
     public static QueryBuilder builder() {
         return new QueryBuilder();
     }
 
+    /**
+     * Creates a simple query with the same SQL for all database types and versions.
+     *
+     * @param sql The SQL of the query.
+     * @param types The types of the selected columns and parameters in the query.
+     * @return A simple query.
+     */
     public static Query of(final String sql, final Map<String, Class<?>> types) {
         return new Query() {
 
@@ -171,6 +220,12 @@ public final class Queries {
         };
     }
 
+    /**
+     * Creates a simple query with the same SQL for all database types and versions and with no parameters or columns.
+     *
+     * @param sql The SQL of the query.
+     * @return A simple query.
+     */
     public static Query of(final String sql) {
         return of(sql, Collections.<String, Class<?>>emptyMap());
     }

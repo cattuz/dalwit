@@ -22,6 +22,6 @@ public interface Query {
 	 * @param name The name of the parameter or column.
 	 * @return The java class of the parameter at the position.
 	 */
-	<T> Class<?> typeOf(String name);
+	<T> Class<T> typeOf(String name);
 	
 }
