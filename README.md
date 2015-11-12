@@ -10,7 +10,7 @@ Query countQuery = Queries.of("SELECT count(*) AS count FROM ...",
 
 try (Database db = /*...*/;
      QueryStatement selectStatement = db.createQuery(countQuery);
-     DatabaseCursor cursor = selectStatement.query();) {
+     DatabaseCursor cursor = selectStatement.query()) {
     long count = cursor.get("count");
     ...
 }
@@ -25,6 +25,7 @@ Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)",
 try (TransactionDatabase db = /*...*/;
      UpdateStatement updateStatement = db.createUpdate(insertQuery);
      Transaction transaction = db.transact()) {
+    updateStatement.bind("a", "example");
     long updateCount = updateStatement.update(transaction);
     ...
 }
