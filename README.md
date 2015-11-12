@@ -1,4 +1,4 @@
-DBSource (renaming pending) is an abstraction for communication with SQL databases in Java. Also features the
+DBSource (renaming pending) is an abstraction for communication with SQL databases in Java. It also features the
 possibility of defining query permutations for different database types and versions to bridge the gap where out dear
 Standard Query Language is not quite as standard as we would like it.
 
