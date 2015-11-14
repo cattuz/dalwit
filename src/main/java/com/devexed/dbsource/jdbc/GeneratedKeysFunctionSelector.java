@@ -13,8 +13,7 @@ import java.util.Map;
  * only the very last inserted id. Useful for databases whose JDBC implementation doesn't have getGeneratedKeys
  * support.</p>
  *
- * <p>For example, for SQLite one could create a instance using the <code>last_insert_rowid()</code> sql function to get
- * the last id inserted.</p>
+ * <p>For example, for SQLite one could use <code>new GeneratedKeysFunctionSelector("last_insert_rowid()")</code>.</p>
  */
 public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelector {
 
@@ -38,7 +37,7 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
     }
 
     @Override
-    public DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement,
+    public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
                                       final Map<Class<?>, JdbcAccessor> accessors,
                                       final Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.
@@ -54,7 +53,7 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
             if (results != null) results.close();
         }
 
-        return new MockCursor<Long>(new MockCursor.Getter() {
+        return new MockCursor(new MockCursor.Getter() {
 
             @Override
             public boolean next(int index) {

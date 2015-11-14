@@ -12,7 +12,7 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
 	}
 
     @Override
-	public DatabaseCursor insert(Transaction transaction) {
+	public Cursor insert(Transaction transaction) {
 		checkNotClosed();
         checkActiveTransaction(transaction);
 

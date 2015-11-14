@@ -54,7 +54,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Query to confirm committal.
-        DatabaseCursor cursor = db.createQuery(selectQuery).query();
+        Cursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
         assertEquals(123, (long) cursor.<Long>get("a"));
         assertEquals("text", cursor.get("b"));
@@ -83,7 +83,7 @@ public abstract class DatabaseTest {
         db.createExecution(createTable).execute(transaction);
         InsertStatement insertStatement = db.createInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
-        DatabaseCursor keyCursor = insertStatement.insert(transaction);
+        Cursor keyCursor = insertStatement.insert(transaction);
         HashSet<Long> keyList = new HashSet<Long>();
 
         while (keyCursor.next()) keyList.add(keyCursor.<Long>get("id"));
@@ -96,7 +96,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Query to confirm only the inserted keys exist in the table.
-        DatabaseCursor cursor = db.createQuery(selectQuery).query();
+        Cursor cursor = db.createQuery(selectQuery).query();
         int containedKeyCount = 0;
 
         while (cursor.next()) {
@@ -149,7 +149,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Ensure only committed child transaction was stored.
-        DatabaseCursor cursor = db.createQuery(selectQuery).query();
+        Cursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
         assertEquals("should be committed", cursor.get("a"));
         assertFalse(cursor.next());
@@ -196,7 +196,7 @@ public abstract class DatabaseTest {
         reopenDatabase();
 
         // Query to confirm committal.
-        DatabaseCursor cursor = db.createQuery(selectQuery).query();
+        Cursor cursor = db.createQuery(selectQuery).query();
         assertTrue(cursor.next());
         assertEquals(value, cursor.get("n"));
         assertFalse(cursor.next());

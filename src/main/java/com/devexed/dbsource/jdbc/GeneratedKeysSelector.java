@@ -1,6 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.DatabaseCursor;
+import com.devexed.dbsource.Cursor;
 import com.devexed.dbsource.Database;
 
 import java.sql.Connection;
@@ -13,10 +13,32 @@ import java.util.Map;
  */
 public interface GeneratedKeysSelector {
 
+    /**
+     * Prepares the insert statement.
+     *
+     * @param database The database requiring the prepared statement.
+     * @param connection The JDBC connection with which to prepare the statement.
+     * @param sql The SQL insert query to prepare.
+     * @param keys The generated keys requested to be returned after executing.
+     * @return A prepared insert statement.
+     * @throws SQLException If the statement could not be prepared for any reason.
+     */
     PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
                                              Map<String, Class<?>> keys) throws SQLException;
 
-    DatabaseCursor selectGeneratedKeys(Database database, PreparedStatement statement, Map<Class<?>,
-            JdbcAccessor> accessors, Map<String, Class<?>> keys) throws SQLException;
+    /**
+     * Retrieve the generated keys from the database. Always called after the insert statement is executed with no
+     * intermediate statements executed.
+     *
+     * @param database The database requiring the prepared statement.
+     * @param statement The recently executed insertion statement prepared with {@link #prepareInsertStatement}.
+     * @param accessors The active JDBC accessors of the database.
+     * @param keys The generated keys requested to be returned after executing.
+     * @return A cursor over the generated keys.
+     * @throws SQLException If the generated keys could not be queried for any reason.
+     */
+    Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
+                                       Map<Class<?>, JdbcAccessor> accessors, Map<String, Class<?>> keys)
+            throws SQLException;
 
 }

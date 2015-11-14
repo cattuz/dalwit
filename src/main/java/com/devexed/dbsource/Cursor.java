@@ -21,7 +21,7 @@ import java.io.Closeable;
  * }
  * </code></pre>
  */
-public interface DatabaseCursor extends Closeable {
+public interface Cursor extends Closeable {
 
 	<T> T get(String column);
 

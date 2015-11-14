@@ -1,6 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.DatabaseCursor;
+import com.devexed.dbsource.Cursor;
 import com.devexed.dbsource.DatabaseException;
 import com.devexed.dbsource.Query;
 import com.devexed.dbsource.QueryStatement;
@@ -14,7 +14,7 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 	}
 
 	@Override
-	public DatabaseCursor query() {
+	public Cursor query() {
 		checkNotClosed();
 
 		try {

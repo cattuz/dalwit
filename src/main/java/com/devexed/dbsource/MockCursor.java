@@ -1,12 +1,9 @@
 package com.devexed.dbsource;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * A cursor over an arbitrary data, provided by a getter interface. Useful for mocking database cursor data.
  */
-public final class MockCursor<T> extends AbstractCloseable implements DatabaseCursor {
+public final class MockCursor extends AbstractCloseable implements Cursor {
 
 	public interface Getter {
 
