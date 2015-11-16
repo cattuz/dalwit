@@ -299,7 +299,7 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
 
 	@Override
 	public void close() {
-		checkNotClosed();
+		super.close();
 
 		try {
 			connection.close();

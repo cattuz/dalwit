@@ -53,18 +53,12 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
             if (results != null) results.close();
         }
 
-        return new MockCursor(new MockCursor.Getter() {
-
-            @Override
-            public boolean next(int index) {
-                return index < 0;
-            }
+        return Cursors.singleton(new Cursors.ColumnFunction() {
 
             @Override
             @SuppressWarnings("unchecked")
-            public <E> E get(int index, String column) {
-                if (!key.equals(column))
-                    throw new DatabaseException("Column must be key column " + key);
+            public <E> E get(String column) {
+                if (!key.equals(column)) throw new DatabaseException("Column must be key column " + key);
 
                 return (E) (Long) generatedKey;
             }

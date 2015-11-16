@@ -15,19 +15,19 @@ public final class GeneratedKeysJdbcSelector implements GeneratedKeysSelector {
 
     @Override
     public PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
-                                                    Map<String, Class<?>> keys) throws SQLException {
-        return connection.prepareStatement(sql, keys.keySet().toArray(new String[keys.size()]));
+                                                    Map<String, Class<?>> keyTypes) throws SQLException {
+        return connection.prepareStatement(sql, keyTypes.keySet().toArray(new String[keyTypes.size()]));
     }
 
     @Override
     public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
-                                      final Map<Class<?>, JdbcAccessor> accessors, final Map<String, Class<?>> keys)
+                                      final Map<Class<?>, JdbcAccessor> accessors, final Map<String, Class<?>> keyTypes)
             throws SQLException {
         return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
 
             @Override
             public JdbcAccessor accessorOf(String name) {
-                return accessors.get(keys.get(name));
+                return accessors.get(keyTypes.get(name));
             }
 
         }, statement.getGeneratedKeys());

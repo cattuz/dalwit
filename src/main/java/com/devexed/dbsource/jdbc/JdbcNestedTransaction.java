@@ -5,6 +5,9 @@ import com.devexed.dbsource.DatabaseException;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
+/**
+ * A JDBC transaction within a parent transaction. Implements transaction nesting using JDBC savepoints.
+ */
 final class JdbcNestedTransaction extends JdbcTransaction {
 
     private final JdbcTransaction parent;
@@ -37,8 +40,10 @@ final class JdbcNestedTransaction extends JdbcTransaction {
 
 	@Override
 	public void close() {
+        if (isClosed()) return;
+
 		parent.closeActiveTransaction();
-		super.close();
+        super.close();
 	}
 
 }

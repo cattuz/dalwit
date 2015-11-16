@@ -12,9 +12,9 @@ import java.io.Closeable;
  *
  * try {
  *   while (cursor.next()) {
- *     String a = cursor.get(0, String.class);
- *     String b = cursor.get(1, Integer.class);
- *     SomeComplexType c = cursor.get(2, SomeComplexType.class);
+ *     String name = cursor.&lt;String&gt;get("name");
+ *     int age = cursor.&lt;Integer&gt;get("age");
+ *     SomeComplexType relationshipStatus = cursor.&lt;SomeComplexType&gt;get("relationship_status");
  *   }
  * } finally {
  *   cursor.close();
@@ -30,9 +30,25 @@ public interface Cursor extends Closeable {
 	 */
 	void close();
 
-	/**
-	 * @return True if the cursor has a next result.
-	 */
-	boolean next();
+    /**
+     * Seek relative to the current position in the cursor. A seek beyond the bound of the cursor will return false and
+     * close the cursor, making it unusable.
+     *
+     * @param rows The amount of rows to move relative to the current position.
+     * @return True if the seek succeeded and the cursor has been moved to the specified row.
+     */
+    boolean seek(int rows);
+
+    /**
+     * Identical to seek(-1);
+     * @see #seek
+     */
+    boolean previous();
+
+    /**
+     * Identical to seek(1);
+     * @see #seek
+     */
+    boolean next();
 	
 }
