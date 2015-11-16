@@ -64,13 +64,12 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         checkNotClosed();
 
         try {
-            if (resultSet.next()) {
-                close();
-                return true;
-            }
+            if (resultSet.next()) return true;
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
+
+		close();
 
         return false;
     }
