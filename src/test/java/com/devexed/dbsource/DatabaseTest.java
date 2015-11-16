@@ -4,7 +4,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -104,7 +107,6 @@ public abstract class DatabaseTest {
         }
 
         assertEquals(keyList.size(), containedKeyCount);
-        assertFalse(cursor.next());
         cursor.close();
     }
 

@@ -13,16 +13,27 @@ public final class EmptyCursor extends AbstractCloseable implements Cursor {
 
 	private EmptyCursor() {}
 
-	@Override
+    @Override
+    public boolean seek(int rows) {
+        checkNotClosed();
+        close();
+        return false;
+    }
+
+    @Override
+    public boolean previous() {
+        return seek(-1);
+    }
+
+    @Override
 	public boolean next() {
-		checkNotClosed();
-		return false;
+		return seek(1);
 	}
 
 	@Override
 	public <T> T get(String column) {
 		checkNotClosed();
-		throw new DatabaseException("Access of empty cursor.");
+		throw new DatabaseException("Illegal cursor position.");
 	}
 	
 }
