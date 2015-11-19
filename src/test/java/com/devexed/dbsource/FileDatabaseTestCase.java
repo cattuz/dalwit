@@ -20,6 +20,7 @@ public abstract class FileDatabaseTestCase extends DatabaseTestCase {
     @Override
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void destroyDatabase() throws Exception {
+        db.close();
         new File(dbPath).delete();
     }
 
