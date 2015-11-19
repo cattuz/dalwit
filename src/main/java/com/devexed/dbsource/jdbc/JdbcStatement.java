@@ -12,7 +12,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
     final JdbcAbstractDatabase database;
     final Query query;
-	final PreparedStatement statement;
+    final PreparedStatement statement;
     final LinkedHashMap<String, Class<?>> keys;
 
     private final HashMap<String, int[]> parameterIndexes;
@@ -29,7 +29,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
             statement = (keys != null)
                     ? database.generatedKeysSelector.prepareInsertStatement(database, database.connection,
-                            query.create(database, parameterIndexes), keys)
+                    query.create(database, parameterIndexes), keys)
                     : database.connection.prepareStatement(query.create(database, parameterIndexes));
         } catch (SQLException e) {
             throw new DatabaseException(e);
@@ -57,10 +57,10 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
     }
 
     @Override
-	public <T> void bind(String parameter, T value) {
-		checkNotClosed();
-		
-		try {
+    public <T> void bind(String parameter, T value) {
+        checkNotClosed();
+
+        try {
             Class<?> type = query.typeOf(parameter);
             if (type == null) throw new DatabaseException("No such parameter " + parameter);
 
@@ -68,11 +68,11 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
             if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
 
             JdbcAccessor accessor = database.accessorFactory.create(type);
-			for (int index: indexes) accessor.set(statement, index, value);
+            for (int index : indexes) accessor.set(statement, index, value);
         } catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+            throw new DatabaseException(e);
+        }
+    }
 
     @Override
     public void close() {
@@ -84,5 +84,5 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
             throw new DatabaseException(e);
         }
     }
-	
+
 }

@@ -5,6 +5,6 @@ package com.devexed.dbsource;
  */
 public interface InsertStatement extends Statement {
 
-	Cursor insert(Transaction transaction);
+    Cursor insert(Transaction transaction);
 
 }

@@ -9,26 +9,26 @@ import java.sql.SQLException;
 
 final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 
-	public JdbcQueryStatement(JdbcAbstractDatabase database, Query query) {
-		super(database, query);
-	}
+    public JdbcQueryStatement(JdbcAbstractDatabase database, Query query) {
+        super(database, query);
+    }
 
-	@Override
-	public Cursor query() {
-		checkNotClosed();
+    @Override
+    public Cursor query() {
+        checkNotClosed();
 
-		try {
-			return new ResultSetCursor(new ResultSetCursor.TypeFunction() {
+        try {
+            return new ResultSetCursor(new ResultSetCursor.TypeFunction() {
 
-				@Override
-				public Class<?> typeOf(String column) {
-					return query.typeOf(column);
-				}
+                @Override
+                public Class<?> typeOf(String column) {
+                    return query.typeOf(column);
+                }
 
-			}, database.accessorFactory, statement.executeQuery());
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+            }, database.accessorFactory, statement.executeQuery());
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
 
 }

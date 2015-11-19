@@ -8,16 +8,16 @@ import java.sql.SQLException;
 abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transaction {
 
     private final JdbcAbstractDatabase parent;
-	private boolean committed = false;
-	
-	/**
-	 * Create a root level transaction. Committing this transaction will
-	 * update the database.
-	 */
-	JdbcTransaction(JdbcAbstractDatabase parent) {
-		super(parent.connection, parent.accessorFactory, parent.generatedKeysSelector);
+    private boolean committed = false;
+
+    /**
+     * Create a root level transaction. Committing this transaction will
+     * update the database.
+     */
+    JdbcTransaction(JdbcAbstractDatabase parent) {
+        super(parent.connection, parent.accessorFactory, parent.generatedKeysSelector);
         this.parent = parent;
-	}
+    }
 
     private void checkNotCommitted() {
         if (committed) throw new DatabaseException("Already committed");
@@ -25,9 +25,9 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
 
     final void checkActive() {
         checkChildClosed();
-		checkNotCommitted();
-		checkNotClosed();
-	}
+        checkNotCommitted();
+        checkNotClosed();
+    }
 
     abstract void commitTransaction() throws SQLException;
 
@@ -67,5 +67,5 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
             throw new DatabaseException(e);
         }
     }
-	
+
 }

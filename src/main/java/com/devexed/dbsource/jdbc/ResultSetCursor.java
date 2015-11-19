@@ -12,26 +12,19 @@ import java.sql.SQLException;
  */
 final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
-    /** Interface providing method of getting the accessor of a column with a specific name. */
-	public interface TypeFunction {
-
-		Class<?> typeOf(String column);
-
-	}
-
     private final TypeFunction typeOfFunction;
     private final JdbcAccessorFactory accessorFactory;
-	private final ResultSet resultSet;
-	
-	ResultSetCursor(TypeFunction typeOfFunction, JdbcAccessorFactory accessorFactory, ResultSet resultSet) {
-		this.typeOfFunction = typeOfFunction;
+    private final ResultSet resultSet;
+
+    ResultSetCursor(TypeFunction typeOfFunction, JdbcAccessorFactory accessorFactory, ResultSet resultSet) {
+        this.typeOfFunction = typeOfFunction;
         this.accessorFactory = accessorFactory;
         this.resultSet = resultSet;
-	}
+    }
 
-	@Override
-	public boolean seek(int rows) {
-		checkNotClosed();
+    @Override
+    public boolean seek(int rows) {
+        checkNotClosed();
 
         try {
             if (resultSet.relative(rows)) return true;
@@ -42,7 +35,7 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         close();
 
         return false;
-	}
+    }
 
     @Override
     public boolean previous() {
@@ -69,17 +62,17 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
             throw new DatabaseException(e);
         }
 
-		close();
+        close();
 
         return false;
     }
 
-	@Override
+    @Override
     @SuppressWarnings("unchecked")
-	public <T> T get(String column) {
-		checkNotClosed();
-		
-		try {
+    public <T> T get(String column) {
+        checkNotClosed();
+
+        try {
             Class<?> type = typeOfFunction.typeOf(column);
             if (type == null) throw new DatabaseException("No such column " + column);
 
@@ -87,10 +80,10 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
             int index = resultSet.findColumn(column) - 1;
 
             return (T) accessor.get(resultSet, index);
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
 
     @Override
     public void close() {
@@ -101,5 +94,14 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         }
 
         super.close();
+    }
+
+    /**
+     * Interface providing method of getting the accessor of a column with a specific name.
+     */
+    public interface TypeFunction {
+
+        Class<?> typeOf(String column);
+
     }
 }

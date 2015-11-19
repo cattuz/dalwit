@@ -6,6 +6,6 @@ package com.devexed.dbsource;
  */
 public interface UpdateStatement extends Statement {
 
-	long update(Transaction transaction);
+    long update(Transaction transaction);
 
 }

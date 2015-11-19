@@ -8,188 +8,6 @@ import java.util.regex.Pattern;
  */
 public final class Queries {
 
-    private static abstract class QueryPermutation {
-
-        final String query;
-
-        QueryPermutation(String query) {
-            this.query = query;
-        }
-
-        final String getQuery() {
-            return query;
-        }
-
-        abstract boolean matchesDatabase(ReadonlyDatabase database);
-
-    }
-
-    private static class TypeQueryPermutation extends QueryPermutation {
-
-        final String type;
-
-        private TypeQueryPermutation(String type, String query) {
-            super(query);
-            this.type = type;
-        }
-
-        @Override
-        boolean matchesDatabase(ReadonlyDatabase database) {
-            return type.equals(database.getType());
-        }
-
-    }
-
-    private static final class PatternQueryPermutation extends TypeQueryPermutation {
-
-        final Pattern version;
-
-        private PatternQueryPermutation(String type, Pattern version, String query) {
-            super(type, query);
-            this.version = version;
-        }
-
-        @Override
-        public boolean matchesDatabase(ReadonlyDatabase database) {
-            return super.matchesDatabase(database) && version.matcher(database.getVersion()).find();
-
-        }
-
-    }
-
-    private static final class MinimumVersionQueryPermutation extends TypeQueryPermutation {
-
-        final int[] version;
-
-        private MinimumVersionQueryPermutation(String type, int[] version, String query) {
-            super(type, query);
-            this.version = version;
-        }
-
-        @Override
-        public boolean matchesDatabase(ReadonlyDatabase database) {
-            if (!super.matchesDatabase(database)) return false;
-
-            int versionIndex = 0;
-
-            for (String part : database.getType().split("\\.")) {
-                if (versionIndex >= version.length) break;
-
-                try {
-                    if (Integer.parseInt(part) < version[versionIndex]) return false;
-                } catch (Exception e) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-    }
-
-    /**
-     * A builder for complex queries.
-     */
-    public static final class QueryBuilder {
-
-        private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
-        private String defaultQuery = null;
-
-        private QueryBuilder() {
-        }
-
-        /**
-         * Add a query permutation only applicable to a certain database type.
-         *
-         * @param type  The database type for which the query is used.
-         * @param query The query to use for this permutation.
-         */
-        public QueryBuilder forType(String type, String query) {
-            permutations.add(new TypeQueryPermutation(type, query));
-            return this;
-        }
-
-        /**
-         * Add a query permutation only applicable to a certain database type whose version string matches a certain
-         * regular expression.
-         *
-         * @param type           The database type for which the query is used.
-         * @param versionPattern The regular expression pattern to match against the database version.
-         * @param query          The query to use for this permutation.
-         */
-        public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
-            permutations.add(new PatternQueryPermutation(type, versionPattern, query));
-            return this;
-        }
-
-        /**
-         * Add a query permutation only applicable to a certain database type whose version string interpreted as a
-         * series of point-separated numbers is, in order, larger or equal to each of the integers in the minimum
-         * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
-         * but not "1.2" or "2.5.3".
-         *
-         * @param type           The database type for which the query is used.
-         * @param minimumVersion The regular expression pattern to match against the database version.
-         * @param query          The query to use for this permutation.
-         */
-        public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
-            permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
-            return this;
-        }
-
-        /**
-         * Supplies the fallback query to use when no other permutation matches.
-         *
-         * @param query The query to use as fallback.
-         */
-        public QueryBuilder forDefault(String query) {
-            defaultQuery = query;
-            return this;
-        }
-
-        /**
-         * Build the query with no selected columns or parameters.
-         */
-        public Query build() {
-            return build(Collections.<String, Class<?>>emptyMap());
-        }
-
-        /**
-         * Build the query with selected columns and parameters types.
-         *
-         * @param types The types of the selected columns and parameters in the query.
-         */
-        public Query build(final Map<String, Class<?>> types) {
-            return new Query() {
-
-                @Override
-                public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
-                    String query = defaultQuery;
-
-                    for (QueryPermutation permutation : permutations) {
-                        if (permutation.matchesDatabase(database)) {
-                            query = permutation.query;
-                            break;
-                        }
-                    }
-
-                    if (query == null)
-                        throw new DatabaseException("No applicable query permutation found for database " + database);
-
-                    return query;
-                }
-
-                @Override
-                @SuppressWarnings("unchecked")
-                public <T> Class<T> typeOf(String name) {
-                    return (Class<T>) types.get(name);
-                }
-
-            };
-        }
-
-    }
-
     /**
      * Builds a potentially complex query to handle multiple database types and versions.
      *
@@ -414,6 +232,188 @@ public final class Queries {
         }
 
         return queryBuilder.toString();
+    }
+
+    private static abstract class QueryPermutation {
+
+        final String query;
+
+        QueryPermutation(String query) {
+            this.query = query;
+        }
+
+        final String getQuery() {
+            return query;
+        }
+
+        abstract boolean matchesDatabase(ReadonlyDatabase database);
+
+    }
+
+    private static class TypeQueryPermutation extends QueryPermutation {
+
+        final String type;
+
+        private TypeQueryPermutation(String type, String query) {
+            super(query);
+            this.type = type;
+        }
+
+        @Override
+        boolean matchesDatabase(ReadonlyDatabase database) {
+            return type.equals(database.getType());
+        }
+
+    }
+
+    private static final class PatternQueryPermutation extends TypeQueryPermutation {
+
+        final Pattern version;
+
+        private PatternQueryPermutation(String type, Pattern version, String query) {
+            super(type, query);
+            this.version = version;
+        }
+
+        @Override
+        public boolean matchesDatabase(ReadonlyDatabase database) {
+            return super.matchesDatabase(database) && version.matcher(database.getVersion()).find();
+
+        }
+
+    }
+
+    private static final class MinimumVersionQueryPermutation extends TypeQueryPermutation {
+
+        final int[] version;
+
+        private MinimumVersionQueryPermutation(String type, int[] version, String query) {
+            super(type, query);
+            this.version = version;
+        }
+
+        @Override
+        public boolean matchesDatabase(ReadonlyDatabase database) {
+            if (!super.matchesDatabase(database)) return false;
+
+            int versionIndex = 0;
+
+            for (String part : database.getType().split("\\.")) {
+                if (versionIndex >= version.length) break;
+
+                try {
+                    if (Integer.parseInt(part) < version[versionIndex]) return false;
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+    }
+
+    /**
+     * A builder for complex queries.
+     */
+    public static final class QueryBuilder {
+
+        private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
+        private String defaultQuery = null;
+
+        private QueryBuilder() {
+        }
+
+        /**
+         * Add a query permutation only applicable to a certain database type.
+         *
+         * @param type  The database type for which the query is used.
+         * @param query The query to use for this permutation.
+         */
+        public QueryBuilder forType(String type, String query) {
+            permutations.add(new TypeQueryPermutation(type, query));
+            return this;
+        }
+
+        /**
+         * Add a query permutation only applicable to a certain database type whose version string matches a certain
+         * regular expression.
+         *
+         * @param type           The database type for which the query is used.
+         * @param versionPattern The regular expression pattern to match against the database version.
+         * @param query          The query to use for this permutation.
+         */
+        public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
+            permutations.add(new PatternQueryPermutation(type, versionPattern, query));
+            return this;
+        }
+
+        /**
+         * Add a query permutation only applicable to a certain database type whose version string interpreted as a
+         * series of point-separated numbers is, in order, larger or equal to each of the integers in the minimum
+         * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
+         * but not "1.2" or "2.5.3".
+         *
+         * @param type           The database type for which the query is used.
+         * @param minimumVersion The regular expression pattern to match against the database version.
+         * @param query          The query to use for this permutation.
+         */
+        public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
+            permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
+            return this;
+        }
+
+        /**
+         * Supplies the fallback query to use when no other permutation matches.
+         *
+         * @param query The query to use as fallback.
+         */
+        public QueryBuilder forDefault(String query) {
+            defaultQuery = query;
+            return this;
+        }
+
+        /**
+         * Build the query with no selected columns or parameters.
+         */
+        public Query build() {
+            return build(Collections.<String, Class<?>>emptyMap());
+        }
+
+        /**
+         * Build the query with selected columns and parameters types.
+         *
+         * @param types The types of the selected columns and parameters in the query.
+         */
+        public Query build(final Map<String, Class<?>> types) {
+            return new Query() {
+
+                @Override
+                public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
+                    String query = defaultQuery;
+
+                    for (QueryPermutation permutation : permutations) {
+                        if (permutation.matchesDatabase(database)) {
+                            query = permutation.query;
+                            break;
+                        }
+                    }
+
+                    if (query == null)
+                        throw new DatabaseException("No applicable query permutation found for database " + database);
+
+                    return query;
+                }
+
+                @Override
+                @SuppressWarnings("unchecked")
+                public <T> Class<T> typeOf(String name) {
+                    return (Class<T>) types.get(name);
+                }
+
+            };
+        }
+
     }
 
     private static abstract class ConcatenatedQuery implements Query {

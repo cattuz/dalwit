@@ -10,30 +10,30 @@ import java.sql.Savepoint;
  */
 final class JdbcNestedTransaction extends JdbcTransaction {
 
-	private final Savepoint savepoint;
+    private final Savepoint savepoint;
 
-	/**
-	 * Create a root level transaction. Committing this transaction will only
-	 * update the database if the parent chain of transactions are committed.
-	 */
-	JdbcNestedTransaction(JdbcTransaction parent) {
-		super(parent);
+    /**
+     * Create a root level transaction. Committing this transaction will only
+     * update the database if the parent chain of transactions are committed.
+     */
+    JdbcNestedTransaction(JdbcTransaction parent) {
+        super(parent);
 
-		try {
-			this.savepoint = parent.connection.setSavepoint();
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+        try {
+            this.savepoint = parent.connection.setSavepoint();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
 
-	@Override
-	void commitTransaction() throws SQLException {
-		connection.releaseSavepoint(savepoint);
-	}
+    @Override
+    void commitTransaction() throws SQLException {
+        connection.releaseSavepoint(savepoint);
+    }
 
-	@Override
-	void rollbackTransaction() throws SQLException {
-		connection.rollback(savepoint);
-	}
+    @Override
+    void rollbackTransaction() throws SQLException {
+        connection.rollback(savepoint);
+    }
 
 }

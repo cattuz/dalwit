@@ -8,6 +8,11 @@ import java.sql.SQLException;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
+    private JdbcDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
+                         GeneratedKeysSelector generatedKeysSelector) {
+        super(connection, accessorFactory, generatedKeysSelector);
+    }
+
     public static JdbcDatabase open(Connection connection, JdbcAccessorFactory accessorFactory,
                                     GeneratedKeysSelector generatedKeysSelector) {
         try {
@@ -23,23 +28,18 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
         return open(connection, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
     }
 
-    private JdbcDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
-                         GeneratedKeysSelector generatedKeysSelector) {
-		super(connection, accessorFactory, generatedKeysSelector);
-	}
-
-	@Override
-	public Transaction transact() {
+    @Override
+    public Transaction transact() {
         checkChildClosed();
-		checkNotClosed();
+        checkNotClosed();
 
         JdbcRootTransaction transaction = new JdbcRootTransaction(this);
         onOpenChild(transaction);
-		return transaction;
-	}
+        return transaction;
+    }
 
-	@Override
-	public void close() {
+    @Override
+    public void close() {
         if (isClosed()) return;
 
         super.close();
@@ -49,6 +49,6 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
-	}
+    }
 
 }

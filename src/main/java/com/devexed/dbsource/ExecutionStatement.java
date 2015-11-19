@@ -5,6 +5,6 @@ package com.devexed.dbsource;
  */
 public interface ExecutionStatement extends Statement {
 
-	void execute(Transaction transaction);
+    void execute(Transaction transaction);
 
 }

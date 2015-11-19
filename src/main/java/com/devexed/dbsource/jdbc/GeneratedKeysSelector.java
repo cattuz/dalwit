@@ -16,10 +16,10 @@ public interface GeneratedKeysSelector {
     /**
      * Prepares the insert statement.
      *
-     * @param database The database requiring the prepared statement.
+     * @param database   The database requiring the prepared statement.
      * @param connection The JDBC connection with which to prepare the statement.
-     * @param sql The SQL insert query to prepare.
-     * @param keys The generated keys requested to be returned after executing.
+     * @param sql        The SQL insert query to prepare.
+     * @param keys       The generated keys requested to be returned after executing.
      * @return A prepared insert statement.
      * @throws SQLException If the statement could not be prepared for any reason.
      */
@@ -30,10 +30,10 @@ public interface GeneratedKeysSelector {
      * Retrieve the generated keys from the database. Always called after the insert statement is executed with no
      * intermediate statements executed.
      *
-     * @param database The database requiring the prepared statement.
-     * @param statement The recently executed insertion statement prepared with {@link #prepareInsertStatement}.
+     * @param database        The database requiring the prepared statement.
+     * @param statement       The recently executed insertion statement prepared with {@link #prepareInsertStatement}.
      * @param accessorFactory The active JDBC accessors of the database.
-     * @param keys The generated keys requested to be returned after executing.
+     * @param keys            The generated keys requested to be returned after executing.
      * @return A cursor over the generated keys.
      * @throws SQLException If the generated keys could not be queried for any reason.
      */

@@ -9,20 +9,20 @@ import java.sql.SQLException;
 
 final class JdbcExecutionStatement extends JdbcStatement implements ExecutionStatement {
 
-	public JdbcExecutionStatement(JdbcAbstractDatabase database, Query query) {
-		super(database, query);
-	}
+    public JdbcExecutionStatement(JdbcAbstractDatabase database, Query query) {
+        super(database, query);
+    }
 
-	@Override
-	public void execute(Transaction transaction) {
-		checkNotClosed();
-		checkActiveTransaction(transaction);
+    @Override
+    public void execute(Transaction transaction) {
+        checkNotClosed();
+        checkActiveTransaction(transaction);
 
-		try {
-			statement.execute();
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+        try {
+            statement.execute();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
 
 }

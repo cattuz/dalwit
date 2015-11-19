@@ -12,7 +12,7 @@ import java.util.Map;
  * <p>Incomplete implementation of generated key selection where a single function is used to get the identity value of
  * only the very last inserted id. Useful for databases whose JDBC implementation doesn't have getGeneratedKeys
  * support.</p>
- *
+ * <p/>
  * <p>For example, for SQLite one could use <code>new FunctionJdbcGeneratedKeysSelector("last_insert_rowid()")</code>.</p>
  */
 public final class FunctionJdbcGeneratedKeysSelector implements GeneratedKeysSelector {

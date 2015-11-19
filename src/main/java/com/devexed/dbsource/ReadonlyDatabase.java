@@ -4,7 +4,9 @@ import java.io.Closeable;
 
 public interface ReadonlyDatabase extends Closeable {
 
-    /** Prepares a query into a statement that reads from the database. */
+    /**
+     * Prepares a query into a statement that reads from the database.
+     */
     QueryStatement createQuery(Query query);
 
     @Override

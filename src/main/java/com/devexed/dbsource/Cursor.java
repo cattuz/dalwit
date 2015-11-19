@@ -6,10 +6,10 @@ import java.io.Closeable;
  * <p>A cursor with rows accessed sequentially through iteration. Cursor instances always start off pointing before the
  * first row, and as such require a call to {@link #next} before any column data can be read. Iterating over a cursor
  * typically follows the following pattern:</p>
- *
+ * <p/>
  * <pre><code>
  * Cursor cursor = ...;
- *
+ * <p/>
  * try {
  *   while (cursor.next()) {
  *     String name = cursor.&lt;String&gt;get("name");
@@ -23,12 +23,12 @@ import java.io.Closeable;
  */
 public interface Cursor extends Closeable {
 
-	<T> T get(String column);
+    <T> T get(String column);
 
-	/**
-	 * Close the cursor, after which it is unusable.
-	 */
-	void close();
+    /**
+     * Close the cursor, after which it is unusable.
+     */
+    void close();
 
     /**
      * Seek relative to the current position in the cursor. A seek beyond the bound of the cursor will return false and
@@ -41,14 +41,16 @@ public interface Cursor extends Closeable {
 
     /**
      * Identical to seek(-1);
+     *
      * @see #seek
      */
     boolean previous();
 
     /**
      * Identical to seek(1);
+     *
      * @see #seek
      */
     boolean next();
-	
+
 }

@@ -5,13 +5,14 @@ package com.devexed.dbsource;
  */
 public final class EmptyCursor extends AbstractCloseable implements Cursor {
 
-	private static final EmptyCursor instance = new EmptyCursor();
+    private static final EmptyCursor instance = new EmptyCursor();
 
-	public static Cursor of() {
-		return instance;
-	}
+    private EmptyCursor() {
+    }
 
-	private EmptyCursor() {}
+    public static Cursor of() {
+        return instance;
+    }
 
     @Override
     public boolean seek(int rows) {
@@ -26,14 +27,14 @@ public final class EmptyCursor extends AbstractCloseable implements Cursor {
     }
 
     @Override
-	public boolean next() {
-		return seek(1);
-	}
+    public boolean next() {
+        return seek(1);
+    }
 
-	@Override
-	public <T> T get(String column) {
-		checkNotClosed();
-		throw new DatabaseException("Illegal cursor position.");
-	}
-	
+    @Override
+    public <T> T get(String column) {
+        checkNotClosed();
+        throw new DatabaseException("Illegal cursor position.");
+    }
+
 }

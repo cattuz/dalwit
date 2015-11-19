@@ -9,9 +9,10 @@ public interface Query {
 
     /**
      * Create the query with indexed parameters, suitable for most databases.
-     * @param database The database to apply the query to, with type info to allow different queries for different
-     *                 databases.
-     * @param parameterIndexes The indexes of the named parameters in the query.
+	 *
+	 * @param database         The database to apply the query to, with type info to allow different queries for different
+	 *                         databases.
+	 * @param parameterIndexes The indexes of the named parameters in the query.
      * @return The query with indexed parameters.
      */
 	String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes);
@@ -23,5 +24,5 @@ public interface Query {
 	 * @return The java class of the parameter at the position.
 	 */
 	<T> Class<T> typeOf(String name);
-	
+
 }

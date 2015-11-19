@@ -10,19 +10,21 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 
 	final Connection connection;
 	final JdbcAccessorFactory accessorFactory;
-    final GeneratedKeysSelector generatedKeysSelector;
+	final GeneratedKeysSelector generatedKeysSelector;
 
 	private JdbcTransaction child = null;
-	
+
 	JdbcAbstractDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
-                         GeneratedKeysSelector generatedKeysSelector) {
+						 GeneratedKeysSelector generatedKeysSelector) {
 		this.connection = connection;
 		this.accessorFactory = accessorFactory;
-        this.generatedKeysSelector = generatedKeysSelector;
+		this.generatedKeysSelector = generatedKeysSelector;
     }
 
-	/** Check if this transaction has an open child transaction. */
-    final void checkChildClosed() {
+	/**
+	 * Check if this transaction has an open child transaction.
+	 */
+	final void checkChildClosed() {
 		if (child != null) throw new DatabaseException("Child transaction is still open");
 	}
 
@@ -37,11 +39,11 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 
         this.child = child;
     }
-	
-	@Override
+
+    @Override
 	public String getType() {
 		checkNotClosed();
-		
+
 		try {
 			return connection.getMetaData().getDatabaseProductName();
 		} catch (SQLException e) {
@@ -49,8 +51,8 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 		}
 	}
 
-    @Override
-    public String getVersion() {
+	@Override
+	public String getVersion() {
         checkNotClosed();
 
         try {
@@ -101,17 +103,17 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 	@Override
 	public String toString() {
 		String url;
-		
+
 		try {
 			url = connection.getMetaData().getURL();
 		} catch (SQLException e) {
 			url = ":unavailable:";
 		}
-		
+
 		return "[" + JdbcDatabase.class.getSimpleName() + "; " +
-                "type=" + getType() + "; " +
+				"type=" + getType() + "; " +
                 "version=" + getVersion() + "; " +
                 "url=" + url + "]";
 	}
-	
+
 }
