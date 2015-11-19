@@ -10,28 +10,20 @@ import java.util.Properties;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
-    public static Database openReadable(String url, Properties properties, JdbcAccessorFactory accessorFactory,
-                                        GeneratedKeysSelector generatedKeysSelector) {
-        return open(url, properties, accessorFactory, generatedKeysSelector, false);
-    }
-
-    public static TransactionDatabase openWritable(String url, Properties properties,
-                                                   JdbcAccessorFactory accessorFactory,
-                                                   GeneratedKeysSelector generatedKeysSelector) {
-        return open(url, properties, accessorFactory, generatedKeysSelector, true);
-    }
-
-	private static JdbcDatabase open(String url, Properties properties, JdbcAccessorFactory accessorFactory,
-                                     GeneratedKeysSelector generatedKeysSelector, boolean writable) {
-		try {
-			Connection connection = DriverManager.getConnection(url, properties);
-            connection.setReadOnly(!writable); // Enforce readability constraint.
+    public static JdbcDatabase open(Connection connection, JdbcAccessorFactory accessorFactory,
+                                    GeneratedKeysSelector generatedKeysSelector) {
+        try {
             connection.setAutoCommit(false); // Needs to be false for transactions to work.
-			return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+
+        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
+    }
+
+    public static JdbcDatabase open(Connection connection) {
+        return open(connection, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
+    }
 
     private JdbcDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
                          GeneratedKeysSelector generatedKeysSelector) {

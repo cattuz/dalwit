@@ -7,6 +7,9 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public class H2JdbcDatabaseTest extends FileDatabaseTestCase {
@@ -18,15 +21,20 @@ public class H2JdbcDatabaseTest extends FileDatabaseTestCase {
 
     @Override
     public TransactionDatabase openDatabase() {
+        Connection connection;
+
         try {
             Class.forName("org.h2.Driver");
+            connection = DriverManager.getConnection("jdbc:h2:" + getDatabasePath());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-        return JdbcDatabase.openWritable("jdbc:h2:" + getDatabasePath(), new Properties(),
+        return JdbcDatabase.open(connection,
                 new DefaultJdbcAccessorFactory(),
-                new FunctionJdbcGeneratedKeysSelector("SCOPE_IDENTITY()", Long.TYPE));
+                new FunctionJdbcGeneratedKeysSelector("scope_identity()", Long.TYPE));
     }
 
 }

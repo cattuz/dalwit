@@ -31,15 +31,19 @@ try (TransactionDatabase db = /*...*/;
     transaction.commit();
 }
 ```
-    
-Since many JDBC implementations lack support for all getters and setters as well as full
-`PreparedStatement#getGeneratedKeys()` support, opening a JDBC connection requires you to define how you want your
+
+By default, opening a database only requires a connection object.
+
+```java
+TransactionDatabase db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"));
+```
+
+However, since many JDBC implementations lack support for all getters and setters as well as full
+`PreparedStatement#getGeneratedKeys()` support, opening a JDBC connection allows you to define how you want your
 objects set and gotten and your generated keys provided.
 
 ```java
-TransactionDatabase db = JdbcDatabase.openWritable(
-        "jdbc:sqlite:~/test.db",
-        new Properties(),
-        JdbcDatabase.accessors,
+TransactionDatabase db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"),
+        new DefaultJdbcAccessorFactory(),
         new GeneratedKeysFunctionSelector("last_insert_id()"));
 ```

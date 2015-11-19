@@ -7,6 +7,9 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Properties;
 
 import static org.junit.Assert.fail;
@@ -20,15 +23,20 @@ public class SQLiteJdbcDatabaseTest extends FileDatabaseTestCase {
 
     @Override
     public TransactionDatabase openDatabase() {
+        Connection connection;
+
         try {
             Class.forName("org.sqlite.JDBC");
+            connection = DriverManager.getConnection("jdbc:sqlite:" + getDatabasePath());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-        return JdbcDatabase.openWritable("jdbc:sqlite:" + getDatabasePath(), new Properties(),
+        return JdbcDatabase.open(connection,
                 new DefaultJdbcAccessorFactory(),
-                new FunctionJdbcGeneratedKeysSelector("LAST_INSERT_ROWID()", Long.TYPE));
+                new FunctionJdbcGeneratedKeysSelector("last_insert_rowid()", Long.TYPE));
     }
 
 }
