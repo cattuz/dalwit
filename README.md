@@ -19,10 +19,9 @@ try (Database db = /*...*/;
 Updating the database always requires a transaction.  If a transaction is closed without committing it is rolled back.
 
 ```java
-Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)",
-        new HashMap() {{ put("a", String.class); }});
+Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)", new HashMap() {{ put("a", String.class); }});
 
-try (TransactionDatabase db = /*...*/;
+try (Database db = /*...*/;
      UpdateStatement updateStatement = db.createUpdate(insertQuery);
      Transaction transaction = db.transact()) {
     updateStatement.bind("a", "example");
@@ -35,7 +34,7 @@ try (TransactionDatabase db = /*...*/;
 By default, opening a database only requires a connection object.
 
 ```java
-TransactionDatabase db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"));
+Database db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"));
 ```
 
 However, since many JDBC implementations lack support for all getters and setters as well as full
@@ -43,7 +42,7 @@ However, since many JDBC implementations lack support for all getters and setter
 objects set and gotten and your generated keys provided.
 
 ```java
-TransactionDatabase db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"),
+Database db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"),
         new DefaultJdbcAccessorFactory(),
         new GeneratedKeysFunctionSelector("last_insert_id()"));
 ```

@@ -1,12 +1,10 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.Database;
 import com.devexed.dbsource.DatabaseException;
 import com.devexed.dbsource.Transaction;
-import com.devexed.dbsource.TransactionDatabase;
 
-import java.sql.*;
-import java.util.Properties;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 

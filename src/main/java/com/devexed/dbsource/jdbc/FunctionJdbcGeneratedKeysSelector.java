@@ -26,7 +26,7 @@ public final class FunctionJdbcGeneratedKeysSelector implements GeneratedKeysSel
     }
 
     @Override
-    public PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
+    public PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,
                                                     Map<String, Class<?>> keys) throws SQLException {
         if (keys.size() > 1) throw new DatabaseException("Only a single generated key column is supported.");
 
@@ -40,7 +40,7 @@ public final class FunctionJdbcGeneratedKeysSelector implements GeneratedKeysSel
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
+    public Cursor selectGeneratedKeys(ReadonlyDatabase database, PreparedStatement statement,
                                       final JdbcAccessorFactory accessorFactory,
                                       final Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.

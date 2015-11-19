@@ -14,7 +14,7 @@ public interface Query {
      * @param parameterIndexes The indexes of the named parameters in the query.
      * @return The query with indexed parameters.
      */
-	String create(Database database, Map<String, int[]> parameterIndexes);
+	String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes);
 
 	/**
 	 * Get the type of a named parameter or column (in the case of select queries).

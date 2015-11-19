@@ -1,17 +1,42 @@
 package com.devexed.dbsource;
 
-import java.io.Closeable;
+import java.util.Map;
 
-public interface Database extends Closeable {
+/** Database supporting transactions (modifying the database). */
+public interface Database extends ReadonlyDatabase {
 
-    /** Prepares a query into a statement that reads from the database. */
-    QueryStatement createQuery(Query query);
+	/**
+	 * Prepares an SQL statement which updates the database and returns the update count.
+	 *
+	 * @param query The SQL statement. E.g. insert, update, delete.
+	 * @return The prepared statement.
+	 */
+	UpdateStatement createUpdate(Query query);
 
-    @Override
-    void close();
+	/**
+	 * Prepares an SQL statement which executes a statement on
+	 * the database.
+	 *
+	 * @param query The SQL statement.
+	 * @return The prepared insert statement.
+	 */
+	ExecutionStatement createExecution(Query query);
 
-    String getType();
+	/**
+	 * Prepares an SQL statement which inserts rows into a table,
+	 * returning a cursor to the generated keys when executed.
+	 *
+	 * @param query The SQL insert statement.
+	 * @param keys The key columns to return in the cursor of generated keys.
+	 * @return The prepared insert statement.
+	 */
+	InsertStatement createInsert(Query query, Map<String, Class<?>> keys);
 
-    String getVersion();
-
+	/**
+	 * Start a transaction to update the database.
+	 *
+	 * @return The transaction which when committed will update the database.
+	 */
+	Transaction transact();
+	
 }
