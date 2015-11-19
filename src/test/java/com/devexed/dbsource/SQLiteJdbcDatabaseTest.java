@@ -3,16 +3,11 @@ package com.devexed.dbsource;
 import com.devexed.dbsource.jdbc.DefaultJdbcAccessorFactory;
 import com.devexed.dbsource.jdbc.FunctionJdbcGeneratedKeysSelector;
 import com.devexed.dbsource.jdbc.JdbcDatabase;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
-
-import static org.junit.Assert.fail;
 
 public class SQLiteJdbcDatabaseTest extends FileDatabaseTestCase {
 
@@ -22,7 +17,7 @@ public class SQLiteJdbcDatabaseTest extends FileDatabaseTestCase {
     }
 
     @Override
-    public TransactionDatabase openDatabase() {
+    public Database openDatabase() {
         Connection connection;
 
         try {

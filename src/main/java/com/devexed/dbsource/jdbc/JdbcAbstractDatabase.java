@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
-abstract class JdbcAbstractDatabase extends AbstractCloseable implements TransactionDatabase {
+abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
 	final Connection connection;
 	final JdbcAccessorFactory accessorFactory;

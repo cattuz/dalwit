@@ -1,7 +1,7 @@
 package com.devexed.dbsource.jdbc;
 
 import com.devexed.dbsource.Cursor;
-import com.devexed.dbsource.Database;
+import com.devexed.dbsource.ReadonlyDatabase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,7 +23,7 @@ public interface GeneratedKeysSelector {
      * @return A prepared insert statement.
      * @throws SQLException If the statement could not be prepared for any reason.
      */
-    PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
+    PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,
                                              Map<String, Class<?>> keys) throws SQLException;
 
     /**
@@ -37,7 +37,7 @@ public interface GeneratedKeysSelector {
      * @return A cursor over the generated keys.
      * @throws SQLException If the generated keys could not be queried for any reason.
      */
-    Cursor selectGeneratedKeys(Database database, PreparedStatement statement, JdbcAccessorFactory accessorFactory,
+    Cursor selectGeneratedKeys(ReadonlyDatabase database, PreparedStatement statement, JdbcAccessorFactory accessorFactory,
                                Map<String, Class<?>> keys)
             throws SQLException;
 

@@ -2,10 +2,10 @@ package com.devexed.dbsource;
 
 
 /**
- * Represents a database transaction. Extends {@link TransactionDatabase}
+ * Represents a database transaction. Extends {@link Database}
  * to support nesting of transactions.
  */
-public interface Transaction extends TransactionDatabase {
+public interface Transaction extends Database {
 	
 	/** Commits the transaction. */
 	void commit();

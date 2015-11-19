@@ -1,8 +1,7 @@
 package com.devexed.dbsource.jdbc;
 
 import com.devexed.dbsource.Cursor;
-import com.devexed.dbsource.Database;
-import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.ReadonlyDatabase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,13 +14,13 @@ import java.util.Map;
 public final class DefaultJdbcGeneratedKeysSelector implements GeneratedKeysSelector {
 
     @Override
-    public PreparedStatement prepareInsertStatement(Database database, Connection connection, String sql,
+    public PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,
                                                     Map<String, Class<?>> keyTypes) throws SQLException {
         return connection.prepareStatement(sql, keyTypes.keySet().toArray(new String[keyTypes.size()]));
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
+    public Cursor selectGeneratedKeys(ReadonlyDatabase database, PreparedStatement statement,
                                       final JdbcAccessorFactory accessorFactory, final Map<String, Class<?>> keyTypes)
             throws SQLException {
         return new ResultSetCursor(new ResultSetCursor.TypeFunction() {

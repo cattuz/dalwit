@@ -2,7 +2,6 @@ package com.devexed.dbsource;
 
 import junit.framework.TestCase;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,13 +13,13 @@ import java.util.Map;
  */
 public abstract class DatabaseTestCase extends TestCase {
 
-    TransactionDatabase db;
+    Database db;
 
     public abstract void createDatabase() throws Exception;
 
     public abstract void destroyDatabase() throws Exception;
 
-    public abstract TransactionDatabase openDatabase();
+    public abstract Database openDatabase();
 
     private void reopenDatabase() {
         db.close();

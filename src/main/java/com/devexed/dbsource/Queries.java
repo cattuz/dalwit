@@ -3,7 +3,9 @@ package com.devexed.dbsource;
 import java.util.*;
 import java.util.regex.Pattern;
 
-/** Helpers for building database engine independent queries. */
+/**
+ * Helpers for building database engine independent queries.
+ */
 public final class Queries {
 
     private static abstract class QueryPermutation {
@@ -18,7 +20,7 @@ public final class Queries {
             return query;
         }
 
-        abstract boolean matchesDatabase(Database database);
+        abstract boolean matchesDatabase(ReadonlyDatabase database);
 
     }
 
@@ -32,7 +34,7 @@ public final class Queries {
         }
 
         @Override
-        boolean matchesDatabase(Database database) {
+        boolean matchesDatabase(ReadonlyDatabase database) {
             return type.equals(database.getType());
         }
 
@@ -48,7 +50,7 @@ public final class Queries {
         }
 
         @Override
-        public boolean matchesDatabase(Database database) {
+        public boolean matchesDatabase(ReadonlyDatabase database) {
             return super.matchesDatabase(database) && version.matcher(database.getVersion()).find();
 
         }
@@ -65,12 +67,12 @@ public final class Queries {
         }
 
         @Override
-        public boolean matchesDatabase(Database database) {
+        public boolean matchesDatabase(ReadonlyDatabase database) {
             if (!super.matchesDatabase(database)) return false;
 
             int versionIndex = 0;
 
-            for (String part: database.getType().split("\\.")) {
+            for (String part : database.getType().split("\\.")) {
                 if (versionIndex >= version.length) break;
 
                 try {
@@ -93,12 +95,13 @@ public final class Queries {
         private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
         private String defaultQuery = null;
 
-        private QueryBuilder() {}
+        private QueryBuilder() {
+        }
 
         /**
          * Add a query permutation only applicable to a certain database type.
          *
-         * @param type The database type for which the query is used.
+         * @param type  The database type for which the query is used.
          * @param query The query to use for this permutation.
          */
         public QueryBuilder forType(String type, String query) {
@@ -110,9 +113,9 @@ public final class Queries {
          * Add a query permutation only applicable to a certain database type whose version string matches a certain
          * regular expression.
          *
-         * @param type The database type for which the query is used.
+         * @param type           The database type for which the query is used.
          * @param versionPattern The regular expression pattern to match against the database version.
-         * @param query The query to use for this permutation.
+         * @param query          The query to use for this permutation.
          */
         public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
             permutations.add(new PatternQueryPermutation(type, versionPattern, query));
@@ -125,9 +128,9 @@ public final class Queries {
          * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
          * but not "1.2" or "2.5.3".
          *
-         * @param type The database type for which the query is used.
+         * @param type           The database type for which the query is used.
          * @param minimumVersion The regular expression pattern to match against the database version.
-         * @param query The query to use for this permutation.
+         * @param query          The query to use for this permutation.
          */
         public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
             permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
@@ -136,6 +139,7 @@ public final class Queries {
 
         /**
          * Supplies the fallback query to use when no other permutation matches.
+         *
          * @param query The query to use as fallback.
          */
         public QueryBuilder forDefault(String query) {
@@ -143,7 +147,9 @@ public final class Queries {
             return this;
         }
 
-        /** Build the query with no selected columns or parameters. */
+        /**
+         * Build the query with no selected columns or parameters.
+         */
         public Query build() {
             return build(Collections.<String, Class<?>>emptyMap());
         }
@@ -157,10 +163,10 @@ public final class Queries {
             return new Query() {
 
                 @Override
-                public String create(Database database, Map<String, int[]> parameterIndexes) {
+                public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
                     String query = defaultQuery;
 
-                    for (QueryPermutation permutation: permutations) {
+                    for (QueryPermutation permutation : permutations) {
                         if (permutation.matchesDatabase(database)) {
                             query = permutation.query;
                             break;
@@ -196,18 +202,18 @@ public final class Queries {
     /**
      * Creates a simple query with the same SQL for all database types and versions.
      *
-     * @param sql The SQL of the query.
+     * @param sql   The SQL of the query.
      * @param types The types of the selected columns and parameters in the query.
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, Class<?>> types) {
         final Map<String, int[]> queryParameterIndexes = new HashMap<String, int[]>();
-        final String querySql =  parseParameterQuery(sql, queryParameterIndexes);
+        final String querySql = parseParameterQuery(sql, queryParameterIndexes);
 
         return new Query() {
 
             @Override
-            public String create(Database database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
                 parameterIndexes.putAll(queryParameterIndexes);
                 return querySql;
             }
@@ -241,10 +247,10 @@ public final class Queries {
         return new ConcatenatedQuery(queries) {
 
             @Override
-            public String create(Database database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
                 StringBuilder queryBuilder = new StringBuilder();
 
-                for (Query query: queries) queryBuilder.append(query.create(database, parameterIndexes));
+                for (Query query : queries) queryBuilder.append(query.create(database, parameterIndexes));
 
                 return queryBuilder.toString();
             }
@@ -261,20 +267,20 @@ public final class Queries {
      * {@link String#format}.
      *
      * @param query The query to format.
-     * @param args The queries to include.
+     * @param args  The queries to include.
      * @return The formatted query.
      */
     public static Query format(final Query query, final Iterable<Query> args) {
         return new ConcatenatedQuery(new ArrayList<Query>() {{
             add(query);
-            for (Query arg: args) add(arg);
+            for (Query arg : args) add(arg);
         }}) {
 
             @Override
-            public String create(Database database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
                 ArrayList<String> stringArgList = new ArrayList<String>();
 
-                for (Query arg: args) stringArgList.add(arg.create(database, parameterIndexes));
+                for (Query arg : args) stringArgList.add(arg.create(database, parameterIndexes));
 
                 String[] stringArgs = new String[stringArgList.size()];
                 stringArgList.toArray(stringArgs);
@@ -294,12 +300,12 @@ public final class Queries {
      * a java identifier and insert a ? at these occurrences.
      * Additionally map the replaced occurrences to unique sequential indexes starting
      * at zero and store the result in the provided parameter map.</p>
-     *
+     * <p/>
      * <p>For example <code>SELECT name FROM person WHERE name = :name AND (mother_surname = :surname OR father_surname
      * = :surname)</code> becomes <code>SELECT name FROM person WHERE name = ? AND (mother_surname = ? OR father_surname
      * = ?)</code> and the parameter index map will contain the values <code>{"name": [0], "surname": [1, 2]}</code></p>
      *
-     * @param query The query to parse.
+     * @param query            The query to parse.
      * @param parameterIndexes The map which to fill with parameter indexes.
      * @return The query with the named parameters replaced with ?.
      */
@@ -399,7 +405,7 @@ public final class Queries {
         }
 
         // Convert Map<ArrayList<Integer>> to HashMap<int[]>.
-        for (Map.Entry<String, ArrayList<Integer>> e: parameterMapBuilder.entrySet()) {
+        for (Map.Entry<String, ArrayList<Integer>> e : parameterMapBuilder.entrySet()) {
             ArrayList<Integer> indexList = e.getValue();
             int[] indexes = new int[indexList.size()];
             parameterIndexes.put(e.getKey(), indexes);
@@ -423,7 +429,7 @@ public final class Queries {
         public final <T> Class<T> typeOf(String name) {
             Set<Class<?>> types = new HashSet<Class<?>>();
 
-            for (Query query: queries) {
+            for (Query query : queries) {
                 Class<?> type = query.typeOf(name);
 
                 if (type != null) types.add(type);
@@ -452,7 +458,7 @@ public final class Queries {
             return new ArrayIterator<E>(array);
         }
 
-    };
+    }
 
     private static final class ArrayIterator<E> implements Iterator<E> {
 
@@ -478,6 +484,6 @@ public final class Queries {
             throw new UnsupportedOperationException();
         }
 
-    };
+    }
 
 }
