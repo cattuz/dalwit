@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Can be used as a key accessor when the JDBC driver fully supports generated keys.
  */
-public final class DefaultJdbcGeneratedKeysSelector implements GeneratedKeysSelector {
+public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeysSelector {
 
     @Override
     public PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,

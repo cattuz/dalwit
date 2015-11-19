@@ -4,6 +4,7 @@ import com.devexed.dbsource.*;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,14 +16,14 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
     final PreparedStatement statement;
     final LinkedHashMap<String, Class<?>> keys;
 
-    private final HashMap<String, int[]> parameterIndexes;
+    private final HashMap<String, ArrayList<Integer>> parameterIndexes;
 
     JdbcStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
         this.database = database;
         this.query = query;
 
         try {
-            parameterIndexes = new HashMap<String, int[]>();
+            parameterIndexes = new HashMap<String, ArrayList<Integer>>();
             this.keys = new LinkedHashMap<String, Class<?>>();
 
             if (keys != null) this.keys.putAll(keys);
@@ -64,7 +65,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
             Class<?> type = query.typeOf(parameter);
             if (type == null) throw new DatabaseException("No such parameter " + parameter);
 
-            int[] indexes = parameterIndexes.get(parameter);
+            ArrayList<Integer> indexes = parameterIndexes.get(parameter);
             if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
 
             JdbcAccessor accessor = database.accessorFactory.create(type);

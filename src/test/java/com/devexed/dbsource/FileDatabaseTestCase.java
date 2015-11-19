@@ -13,13 +13,13 @@ public abstract class FileDatabaseTestCase extends DatabaseTestCase {
     }
 
     @Override
-    public void createDatabase() throws Exception {
+    public final void createDatabase() throws Exception {
         dbPath = createDatabaseFile().getAbsolutePath();
     }
 
     @Override
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void destroyDatabase() throws Exception {
+    public final void destroyDatabase() throws Exception {
         db.close();
         new File(dbPath).delete();
     }

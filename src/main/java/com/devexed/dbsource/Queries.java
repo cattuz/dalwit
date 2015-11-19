@@ -25,13 +25,13 @@ public final class Queries {
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, Class<?>> types) {
-        final Map<String, int[]> queryParameterIndexes = new HashMap<String, int[]>();
+        final Map<String, ArrayList<Integer>> queryParameterIndexes = new HashMap<String, ArrayList<Integer>>();
         final String querySql = parseParameterQuery(sql, queryParameterIndexes);
 
         return new Query() {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
                 parameterIndexes.putAll(queryParameterIndexes);
                 return querySql;
             }
@@ -65,7 +65,7 @@ public final class Queries {
         return new ConcatenatedQuery(queries) {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
                 StringBuilder queryBuilder = new StringBuilder();
 
                 for (Query query : queries) queryBuilder.append(query.create(database, parameterIndexes));
@@ -95,7 +95,7 @@ public final class Queries {
         }}) {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
+            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
                 ArrayList<String> stringArgList = new ArrayList<String>();
 
                 for (Query arg : args) stringArgList.add(arg.create(database, parameterIndexes));
@@ -127,111 +127,122 @@ public final class Queries {
      * @param parameterIndexes The map which to fill with parameter indexes.
      * @return The query with the named parameters replaced with ?.
      */
-    public static String parseParameterQuery(String query, Map<String, int[]> parameterIndexes) {
-        final StringBuilder queryBuilder = new StringBuilder();
-        final StringBuilder parameterBuilder = new StringBuilder();
-        final HashMap<String, ArrayList<Integer>> parameterMapBuilder = new HashMap<String, ArrayList<Integer>>();
-        int currentIndex = 0;
+    public static String parseParameterQuery(String query, Map<String, ArrayList<Integer>> parameterIndexes) {
+        StringBuilder queryBuilder = new StringBuilder();
+        StringBuilder parameterBuilder = new StringBuilder();
+        int parameterIndex = 0;
 
         /* Various ranges where parameters aren't parsed. Handling escaped characters inside the ranges is unnecessary
-           because SQL handles escaping by doubling the character. The parser will simply immediately begin the range
-           again after closing it when a doubled range end is encountered. For example 'abc''def' will be understood as
-           two separate strings. */
-        boolean inComment = false;
-        boolean inDoubleQuote = false;
-        boolean inSingleQuote = false;
-        boolean inBracket = false;
-        boolean inTick = false;
+           because SQL handles escaping by doubling the character. The parser will simply immediately begin a new range
+           again after closing the previous when a doubled range end is encountered. For example 'abc''def' will be
+           understood as two separate strings. */
+        EscapedRange[] escapedRanges = new EscapedRange[]{
+                new EscapedRange("--", "\n"),
+                new EscapedRange("'"),
+                new EscapedRange("\""),
+                new EscapedRange("[", "]"),
+                new EscapedRange("`")
+        };
 
-        for (int i = 0, l = query.length(); i < l; i++) {
-            char c = query.charAt(i);
+        queryLoop:
+        for (int i = 0, l = query.length(); i < l; ) {
+            // Check for escaped ranges in which query parameters can't appear.
+            for (EscapedRange range : escapedRanges) {
+                if (range.inRange) {
+                    // Is this the end of an escaped range?
+                    int length = range.end.length();
+                    int endIndex = i + range.end.length();
 
-            // Exclude comments from query string.
-            if (inComment) {
-                if (c == '\n') {
-                    inComment = false;
-                    continue;
-                }
-            } else {
-                int endIndex = i + 2;
+                    if (endIndex <= l && query.substring(i, endIndex).equals(range.end)) {
+                        range.inRange = false;
+                        queryBuilder.append(range.end);
+                        i += length;
+                    } else {
+                        queryBuilder.append(query.charAt(i));
+                        i++;
+                    }
 
-                if (endIndex <= l && query.substring(i, endIndex).equals("--")) {
-                    inComment = true;
-                    i = endIndex - 1; // -1 to account for for-loop's increment.
-                    continue;
+                    continue queryLoop;
+                } else {
+                    // Is this the start of an escaped range?
+                    int length = range.start.length();
+                    int endIndex = i + length;
+
+                    if (endIndex <= l && query.substring(i, endIndex).equals(range.start)) {
+                        range.inRange = true;
+                        queryBuilder.append(range.start);
+                        i += length;
+
+                        continue queryLoop;
+                    }
                 }
             }
 
-            if (c == '\'') {
-                inSingleQuote = !inSingleQuote;
-            } else if (c == '"') {
-                inDoubleQuote = !inDoubleQuote;
-            } else if (c == '[') {
-                inBracket = true;
-            } else if (inBracket && c == ']') {
-                inBracket = false;
-            } else if (c == '`') {
-                inTick = !inTick;
-            } else if (!inSingleQuote && !inDoubleQuote && !inBracket && !inTick) {
-                if (c == '?')
-                    throw new IllegalArgumentException("Illegal character '?'. Only named parameters are allowed.");
+            char c = query.charAt(i);
 
-                if (c == ':') {
-                    i++;
+            if (c == '?')
+                throw new IllegalArgumentException("Illegal character '?'. Only named parameters are allowed.");
 
-                    // Empty parameter at end.
-                    if (i == l)
-                        throw new IllegalArgumentException("Empty parameter at query end.");
+            if (c == ':') {
+                i++;
 
-                    char ps = query.charAt(i);
+                // Empty parameter at end.
+                if (i == l)
+                    throw new IllegalArgumentException("Empty parameter at query end.");
 
-                    // Illegal parameter start.
-                    if (!Character.isJavaIdentifierStart(ps))
-                        throw new IllegalArgumentException("Character " + ps + " is not a valid parameter (character position " + i + ").");
+                char ps = query.charAt(i);
 
-                    // Build parameter string.
-                    parameterBuilder.setLength(0);
-                    parameterBuilder.append(ps);
-                    i++;
+                // Illegal parameter start.
+                if (!Character.isJavaIdentifierStart(ps))
+                    throw new IllegalArgumentException("Character " + ps + " is not a valid parameter (character position " + i + ").");
 
-                    for (; i < l; i++) {
-                        char p = query.charAt(i);
-                        if (!Character.isJavaIdentifierPart(query.charAt(i))) break;
-                        parameterBuilder.append(p);
-                    }
+                // Build parameter string.
+                parameterBuilder.setLength(0);
+                parameterBuilder.append(ps);
+                i++;
 
-                    // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
-                    String parameter = parameterBuilder.toString();
-                    ArrayList<Integer> indexes = parameterMapBuilder.get(parameter);
-
-                    if (indexes == null) {
-                        indexes = new ArrayList<Integer>();
-                        parameterMapBuilder.put(parameter, indexes);
-                    }
-
-                    indexes.add(currentIndex);
-                    currentIndex++;
-                    queryBuilder.append('?');
-
-                    // Let outer loop increment to correct position.
-                    i--;
-                    continue;
+                for (; i < l; i++) {
+                    char p = query.charAt(i);
+                    if (!Character.isJavaIdentifierPart(query.charAt(i))) break;
+                    parameterBuilder.append(p);
                 }
+
+                // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
+                String parameter = parameterBuilder.toString();
+                ArrayList<Integer> indexes = parameterIndexes.get(parameter);
+
+                if (indexes == null) {
+                    indexes = new ArrayList<Integer>();
+                    parameterIndexes.put(parameter, indexes);
+                }
+
+                indexes.add(parameterIndex);
+                parameterIndex++;
+                queryBuilder.append('?');
+
+                continue;
             }
 
             queryBuilder.append(c);
-        }
-
-        // Convert Map<ArrayList<Integer>> to HashMap<int[]>.
-        for (Map.Entry<String, ArrayList<Integer>> e : parameterMapBuilder.entrySet()) {
-            ArrayList<Integer> indexList = e.getValue();
-            int[] indexes = new int[indexList.size()];
-            parameterIndexes.put(e.getKey(), indexes);
-
-            for (int i = 0; i < indexes.length; i++) indexes[i] = indexList.get(i);
+            i++;
         }
 
         return queryBuilder.toString();
+    }
+
+    private static final class EscapedRange {
+        final String start;
+        final String end;
+        boolean inRange;
+
+        EscapedRange(String start, String end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        EscapedRange(String startAndEnd) {
+            this(startAndEnd, startAndEnd);
+        }
     }
 
     private static abstract class QueryPermutation {
@@ -389,7 +400,7 @@ public final class Queries {
             return new Query() {
 
                 @Override
-                public String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes) {
+                public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
                     String query = defaultQuery;
 
                     for (QueryPermutation permutation : permutations) {

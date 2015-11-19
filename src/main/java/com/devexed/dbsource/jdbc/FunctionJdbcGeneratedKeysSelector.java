@@ -15,7 +15,7 @@ import java.util.Map;
  * <p/>
  * <p>For example, for SQLite one could use <code>new FunctionJdbcGeneratedKeysSelector("last_insert_rowid()")</code>.</p>
  */
-public final class FunctionJdbcGeneratedKeysSelector implements GeneratedKeysSelector {
+public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKeysSelector {
 
     private final String lastGeneratedIdFunction;
     private final Class<?> lastGeneratedIdType;

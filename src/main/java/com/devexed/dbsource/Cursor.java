@@ -3,13 +3,12 @@ package com.devexed.dbsource;
 import java.io.Closeable;
 
 /**
- * <p>A cursor with rows accessed sequentially through iteration. Cursor instances always start off pointing before the
- * first row, and as such require a call to {@link #next} before any column data can be read. Iterating over a cursor
- * typically follows the following pattern:</p>
- * <p/>
+ * <p>A cursor to a sequence of rows. Cursor instances always start off pointing before the first row, and as such
+ * require a call to {@link #seek} or equivalent before any column data can be read. Iterating over a cursor typically
+ * follows the following pattern:</p>
  * <pre><code>
  * Cursor cursor = ...;
- * <p/>
+ *
  * try {
  *   while (cursor.next()) {
  *     String name = cursor.&lt;String&gt;get("name");
@@ -20,9 +19,18 @@ import java.io.Closeable;
  *   cursor.close();
  * }
  * </code></pre>
+ * <p>Note that random access through {@link #seek} is up to the implementation to define and not guaranteed to be
+ * available.</p>
  */
 public interface Cursor extends Closeable {
 
+    /**
+     * Get the value of a column on the current row.
+     *
+     * @param column The name of the column.
+     * @param <T>    The class of the column data.
+     * @return The value of the column at the current row.
+     */
     <T> T get(String column);
 
     /**
@@ -31,7 +39,7 @@ public interface Cursor extends Closeable {
     void close();
 
     /**
-     * Seek relative to the current position in the cursor. A seek beyond the bound of the cursor will return false and
+     * Seek relative to the current position in the cursor. A seek beyond the bounds of the cursor will return false and
      * close the cursor, making it unusable.
      *
      * @param rows The amount of rows to move relative to the current position.

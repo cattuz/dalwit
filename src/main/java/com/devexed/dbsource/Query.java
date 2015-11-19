@@ -1,5 +1,6 @@
 package com.devexed.dbsource;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -15,7 +16,7 @@ public interface Query {
 	 * @param parameterIndexes The indexes of the named parameters in the query.
      * @return The query with indexed parameters.
      */
-	String create(ReadonlyDatabase database, Map<String, int[]> parameterIndexes);
+	String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes);
 
 	/**
 	 * Get the type of a named parameter or column (in the case of select queries).

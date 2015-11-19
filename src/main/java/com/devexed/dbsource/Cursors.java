@@ -1,29 +1,18 @@
 package com.devexed.dbsource;
 
-import java.util.Map;
-
 /**
  * Cursor helpers.
  */
 public final class Cursors {
 
+    /**
+     * Create a cursor with a single row, its columns accessible through a getter function.
+     *
+     * @param columnFunction The function which gets the column values.
+     * @return A cursor with a single row.
+     */
     public static Cursor singleton(ColumnFunction columnFunction) {
         return new SingletonCursor(columnFunction);
-    }
-
-    public static <E> Cursor singleton(final Map<String, E> values) {
-        return new SingletonCursor(new ColumnFunction() {
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <T> T get(String column) {
-                if (!values.containsKey(column))
-                    throw new DatabaseException("No such column " + column + " among " + values.keySet());
-
-                return (T) values.get(column);
-            }
-
-        });
     }
 
     public interface ColumnFunction {

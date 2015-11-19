@@ -9,12 +9,12 @@ import java.sql.SQLException;
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
     private JdbcDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
-                         GeneratedKeysSelector generatedKeysSelector) {
+                         JdbcGeneratedKeysSelector generatedKeysSelector) {
         super(connection, accessorFactory, generatedKeysSelector);
     }
 
     public static JdbcDatabase open(Connection connection, JdbcAccessorFactory accessorFactory,
-                                    GeneratedKeysSelector generatedKeysSelector) {
+                                    JdbcGeneratedKeysSelector generatedKeysSelector) {
         try {
             connection.setAutoCommit(false); // Needs to be false for transactions to work.
         } catch (SQLException e) {

@@ -3,10 +3,7 @@ package com.devexed.dbsource;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -36,6 +33,52 @@ public abstract class DatabaseTestCase extends TestCase {
     protected void tearDown() throws Exception {
         destroyDatabase();
         super.tearDown();
+    }
+
+    public void testIgnoresParameterInSQLGroups() {
+        Query insertQuery = Queries.of("INSERT INTO q (a AS ':b', a AS [:c]) VALUES (:a, \":d\")");
+        HashMap<String, ArrayList<Integer>> parameters = new HashMap<String, ArrayList<Integer>>();
+        insertQuery.create(db, parameters);
+
+        assertTrue(parameters.containsKey("a"));
+        assertTrue(!parameters.containsKey("b"));
+        assertTrue(!parameters.containsKey("c"));
+        assertTrue(!parameters.containsKey("d"));
+    }
+
+    public void testBindsTypedQueryParameter() {
+        Map<String, Class<?>> columnTypes = new HashMap<String, Class<?>>() {{
+            put("a", Integer.class);
+        }};
+        Query createTable = Queries.of("CREATE TABLE q2 (a TEXT NOT NULL)");
+        Query insertQuery = Queries.of("INSERT INTO q2 (a) VALUES (:a)", columnTypes);
+
+        Transaction transaction = db.transact();
+        db.createExecution(createTable).execute(transaction);
+        UpdateStatement queryStatement = db.createUpdate(insertQuery);
+        queryStatement.bind("a", 123);
+        transaction.close();
+    }
+
+    public void testBindWrongQueryParameterTypeThrows() {
+        Map<String, Class<?>> columnTypes = new HashMap<String, Class<?>>() {{
+            put("a", Integer.class);
+        }};
+        Query createTable = Queries.of("CREATE TABLE q3 (a TEXT NOT NULL)");
+        Query insertQuery = Queries.of("INSERT INTO q3 (a) VALUES (:a)", columnTypes);
+
+        Transaction transaction = db.transact();
+        db.createExecution(createTable).execute(transaction);
+        UpdateStatement queryStatement = db.createUpdate(insertQuery);
+
+        try {
+            queryStatement.bind("a", "test");
+            fail("Succeed binding wrong type to parameter");
+        } catch (Exception e) {
+            // Success if reached.
+        }
+
+        transaction.close();
     }
 
     public void testEmptyTransaction() {

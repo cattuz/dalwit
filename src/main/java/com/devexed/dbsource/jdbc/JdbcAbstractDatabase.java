@@ -10,12 +10,12 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 
 	final Connection connection;
 	final JdbcAccessorFactory accessorFactory;
-	final GeneratedKeysSelector generatedKeysSelector;
+	final JdbcGeneratedKeysSelector generatedKeysSelector;
 
 	private JdbcTransaction child = null;
 
 	JdbcAbstractDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
-						 GeneratedKeysSelector generatedKeysSelector) {
+						 JdbcGeneratedKeysSelector generatedKeysSelector) {
 		this.connection = connection;
 		this.accessorFactory = accessorFactory;
 		this.generatedKeysSelector = generatedKeysSelector;

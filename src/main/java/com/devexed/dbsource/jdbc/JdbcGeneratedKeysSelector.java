@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Selects primary keys generated after an insert.
  */
-public interface GeneratedKeysSelector {
+public interface JdbcGeneratedKeysSelector {
 
     /**
      * Prepares the insert statement.
