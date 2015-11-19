@@ -5,8 +5,7 @@ Standard Query Language is not quite as standard as we would like it.
 Querying a database requires one to be specific about the types of each column in SQL query:
 
 ```java
-Query countQuery = Queries.of("SELECT count(*) AS count FROM ...",
-        new HashMap() {{ put("count", Long.TYPE); }});
+Query countQuery = Queries.of("SELECT count(*) AS count FROM ...", new HashMap() {{ put("count", Long.TYPE); }});
 
 try (Database db = /*...*/;
      QueryStatement selectStatement = db.createQuery(countQuery);
@@ -44,5 +43,5 @@ objects set and gotten and your generated keys provided.
 ```java
 Database db = JdbcDatabase.open(DriverManager.getConnection("jdbc:sqlite:~/test.db"),
         new DefaultJdbcAccessorFactory(),
-        new GeneratedKeysFunctionSelector("last_insert_id()"));
+        new FunctionJdbcGeneratedKeysSelector("last_insert_id()"));
 ```
