@@ -9,14 +9,33 @@ import java.util.Map;
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements TransactionDatabase {
 
 	final Connection connection;
-	final Map<Class<?>, JdbcAccessor> accessors;
+	final JdbcAccessorFactory accessorFactory;
     final GeneratedKeysSelector generatedKeysSelector;
+
+	private JdbcTransaction child = null;
 	
-	JdbcAbstractDatabase(Connection connection, Map<Class<?>, JdbcAccessor> accessors,
+	JdbcAbstractDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
                          GeneratedKeysSelector generatedKeysSelector) {
 		this.connection = connection;
-		this.accessors = accessors;
+		this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
+    }
+
+	/** Check if this transaction has an open child transaction. */
+    final void checkChildClosed() {
+		if (child != null) throw new DatabaseException("Child transaction is still open");
+	}
+
+    final void onCloseChild() {
+        if (child == null) throw new DatabaseException("No child transaction open");
+
+        child = null;
+    }
+
+    final void onOpenChild(JdbcTransaction child) {
+        checkChildClosed();
+
+        this.child = child;
     }
 	
 	@Override
@@ -68,7 +87,17 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Transac
 
         return new JdbcInsertStatement(this, query, keys);
 	}
-	
+
+	@Override
+	public void close() {
+		if (isClosed()) return;
+
+        // Close child hierarchy, allowing easy cleanup on failure.
+		if (child != null && !child.isClosed()) child.close();
+
+		super.close();
+	}
+
 	@Override
 	public String toString() {
 		String url;

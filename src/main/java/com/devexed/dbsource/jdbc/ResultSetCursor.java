@@ -13,18 +13,20 @@ import java.sql.SQLException;
 final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
     /** Interface providing method of getting the accessor of a column with a specific name. */
-	public interface AccessorFunction {
+	public interface TypeFunction {
 
-		JdbcAccessor accessorOf(String column);
+		Class<?> typeOf(String column);
 
 	}
 
-    private final AccessorFunction typeOfFunction;
+    private final TypeFunction typeOfFunction;
+    private final JdbcAccessorFactory accessorFactory;
 	private final ResultSet resultSet;
 	
-	ResultSetCursor(AccessorFunction typeOfFunction, ResultSet resultSet) {
+	ResultSetCursor(TypeFunction typeOfFunction, JdbcAccessorFactory accessorFactory, ResultSet resultSet) {
 		this.typeOfFunction = typeOfFunction;
-		this.resultSet = resultSet;
+        this.accessorFactory = accessorFactory;
+        this.resultSet = resultSet;
 	}
 
 	@Override
@@ -32,13 +34,12 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
 		checkNotClosed();
 
         try {
-            if (resultSet.relative(rows)) {
-                close();
-                return true;
-            }
+            if (resultSet.relative(rows)) return true;
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
+
+        close();
 
         return false;
 	}
@@ -48,13 +49,12 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         checkNotClosed();
 
         try {
-            if (resultSet.previous()) {
-                close();
-                return true;
-            }
+            if (resultSet.previous()) return true;
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
+
+        close();
 
         return false;
     }
@@ -80,11 +80,11 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
 		checkNotClosed();
 		
 		try {
-            // Should we cache the indexes or rely on the JDBC implementation to be swift enough?
-            int index = resultSet.findColumn(column);
-            JdbcAccessor accessor = typeOfFunction.accessorOf(column);
+            Class<?> type = typeOfFunction.typeOf(column);
+            if (type == null) throw new DatabaseException("No such column " + column);
 
-            if (accessor == null) throw new DatabaseException("No accessor is defined for column " + column);
+            JdbcAccessor accessor = accessorFactory.create(type);
+            int index = resultSet.findColumn(column) - 1;
 
             return (T) accessor.get(resultSet, index);
 		} catch (SQLException e) {
@@ -92,14 +92,14 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
 		}
 	}
 
-	@Override
-	protected boolean isClosed() {
-        // Override to report correct status if this result set was closed by, for example, its parent JDBC statement.
-		try {
-			return resultSet.isClosed() || super.isClosed();
-		} catch (SQLException e) {
-			throw new DatabaseException(e);
-		}
-	}
+    @Override
+    public void close() {
+        try {
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
 
+        super.close();
+    }
 }

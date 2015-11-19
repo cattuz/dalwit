@@ -18,7 +18,7 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
 
 		try {
             return statement.executeUpdate() > 0
-                    ? database.generatedKeysSelector.selectGeneratedKeys(database, statement, database.accessors, keys)
+                    ? database.generatedKeysSelector.selectGeneratedKeys(database, statement, database.accessorFactory, keys)
                     : EmptyCursor.of();
 		} catch (SQLException e) {
 			throw new DatabaseException(e);

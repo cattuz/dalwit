@@ -1,19 +1,20 @@
 package com.devexed.dbsource;
 
-import com.devexed.dbsource.TransactionDatabase;
-import com.devexed.dbsource.jdbc.GeneratedKeysFunctionSelector;
+import com.devexed.dbsource.jdbc.DefaultJdbcAccessorFactory;
+import com.devexed.dbsource.jdbc.FunctionJdbcGeneratedKeysSelector;
 import com.devexed.dbsource.jdbc.JdbcDatabase;
-import com.devexed.dbsource.jdbc.GeneratedKeysJdbcSelector;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.util.Properties;
 
-public final class H2JdbcDatabaseTest extends DatabaseTest {
+public class H2JdbcDatabaseTest extends FileDatabaseTestCase {
 
-    @Rule
-    public TemporaryFolder dbFolder = new TemporaryFolder();
+    @Override
+    public File createDatabaseFile() throws Exception {
+        return File.createTempFile("test.h2.", ".db");
+    }
 
     @Override
     public TransactionDatabase openDatabase() {
@@ -23,10 +24,9 @@ public final class H2JdbcDatabaseTest extends DatabaseTest {
             throw new RuntimeException(e);
         }
 
-        String dbPath = new File(dbFolder.getRoot(), "test.h2.db").getAbsolutePath();
-
-        return JdbcDatabase.openWritable("jdbc:h2:" + dbPath, new Properties(), JdbcDatabase.accessors,
-                new GeneratedKeysFunctionSelector("SCOPE_IDENTITY()"));
+        return JdbcDatabase.openWritable("jdbc:h2:" + getDatabasePath(), new Properties(),
+                new DefaultJdbcAccessorFactory(),
+                new FunctionJdbcGeneratedKeysSelector("SCOPE_IDENTITY()", Long.TYPE));
     }
 
 }

@@ -62,15 +62,13 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
 		
 		try {
             Class<?> type = query.typeOf(parameter);
-            JdbcAccessor accessor = database.accessors.get(type);
-
-            if (accessor == null) throw new DatabaseException("No accessor is defined for type " + type);
+            if (type == null) throw new DatabaseException("No such parameter " + parameter);
 
             int[] indexes = parameterIndexes.get(parameter);
-
             if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
 
-			for (int index: indexes) accessor.set(statement, index + 1, value);
+            JdbcAccessor accessor = database.accessorFactory.create(type);
+			for (int index: indexes) accessor.set(statement, index, value);
         } catch (SQLException e) {
 			throw new DatabaseException(e);
 		}

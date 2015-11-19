@@ -1,9 +1,6 @@
 package com.devexed.dbsource;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /** Helpers for building database engine independent queries. */
@@ -204,11 +201,15 @@ public final class Queries {
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, Class<?>> types) {
+        final Map<String, int[]> queryParameterIndexes = new HashMap<String, int[]>();
+        final String querySql =  parseParameterQuery(sql, queryParameterIndexes);
+
         return new Query() {
 
             @Override
             public String create(Database database, Map<String, int[]> parameterIndexes) {
-                return parseParameterQuery(sql, parameterIndexes);
+                parameterIndexes.putAll(queryParameterIndexes);
+                return querySql;
             }
 
             @Override
@@ -231,22 +232,76 @@ public final class Queries {
     }
 
     /**
+     * Concatenate multiple queries into one single query, including the types and parameters of all the concatenated.
+     *
+     * @param queries The queries to concatenate.
+     * @return The concatenated query.
+     */
+    public static Query concat(final Iterable<Query> queries) {
+        return new ConcatenatedQuery(queries) {
+
+            @Override
+            public String create(Database database, Map<String, int[]> parameterIndexes) {
+                StringBuilder queryBuilder = new StringBuilder();
+
+                for (Query query: queries) queryBuilder.append(query.create(database, parameterIndexes));
+
+                return queryBuilder.toString();
+            }
+
+        };
+    }
+
+    public static Query concat(Query... queries) {
+        return concat(new ArrayIterable<Query>(queries));
+    }
+
+    /**
+     * Includes the created SQL from the argument queries in the specified query at %s in the query using
+     * {@link String#format}.
+     *
+     * @param query The query to format.
+     * @param args The queries to include.
+     * @return The formatted query.
+     */
+    public static Query format(final Query query, final Iterable<Query> args) {
+        return new ConcatenatedQuery(new ArrayList<Query>() {{
+            add(query);
+            for (Query arg: args) add(arg);
+        }}) {
+
+            @Override
+            public String create(Database database, Map<String, int[]> parameterIndexes) {
+                ArrayList<String> stringArgList = new ArrayList<String>();
+
+                for (Query arg: args) stringArgList.add(arg.create(database, parameterIndexes));
+
+                String[] stringArgs = new String[stringArgList.size()];
+                stringArgList.toArray(stringArgs);
+
+                return String.format(query.create(database, parameterIndexes), (Object[]) stringArgs);
+            }
+
+        };
+    }
+
+    public static Query format(Query query, Query... args) {
+        return format(query, new ArrayIterable<Query>(args));
+    }
+
+    /**
      * <p>Parse a query for named parameter named in the form of a colon (:) followed by
-     * a java identifier and split the query at these occurrences.
+     * a java identifier and insert a ? at these occurrences.
      * Additionally map the replaced occurrences to unique sequential indexes starting
      * at zero and store the result in the provided parameter map.</p>
      *
-     * <p>For example</p>
-     * <code>"SELECT name, mother_surname, father_surname FROM person WHERE name =
-     * :name AND (mother_surname = :surname OR father_surname = :surname)"</code>
-     * <p>becomes</p>
-     * <code>["SELECT name, mother_surname, father_surname FROM person WHERE name = ", " AND
-     * (mother_surname = ", " OR father_surname = ", ")"]</code>
-     * <p>and the parameter index map will contain the values {name: [1], surname: [2, 3]}</p>
+     * <p>For example <code>SELECT name FROM person WHERE name = :name AND (mother_surname = :surname OR father_surname
+     * = :surname)</code> becomes <code>SELECT name FROM person WHERE name = ? AND (mother_surname = ? OR father_surname
+     * = ?)</code> and the parameter index map will contain the values <code>{"name": [0], "surname": [1, 2]}</code></p>
      *
      * @param query The query to parse.
      * @param parameterIndexes The map which to fill with parameter indexes.
-     * @return The query split at the named parameters.
+     * @return The query with the named parameters replaced with ?.
      */
     public static String parseParameterQuery(String query, Map<String, int[]> parameterIndexes) {
         final StringBuilder queryBuilder = new StringBuilder();
@@ -354,5 +409,75 @@ public final class Queries {
 
         return queryBuilder.toString();
     }
-	
+
+    private static abstract class ConcatenatedQuery implements Query {
+
+        private final Iterable<Query> queries;
+
+        private ConcatenatedQuery(Iterable<Query> queries) {
+            this.queries = queries;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public final <T> Class<T> typeOf(String name) {
+            Set<Class<?>> types = new HashSet<Class<?>>();
+
+            for (Query query: queries) {
+                Class<?> type = query.typeOf(name);
+
+                if (type != null) types.add(type);
+            }
+
+            if (types.isEmpty()) return null;
+            else if (types.size() > 0)
+                throw new DatabaseException("Multiple different types are defined for parameter with name " + name +
+                        ": " + types);
+
+            return (Class<T>) types.iterator().next();
+        }
+
+    }
+
+    private static final class ArrayIterable<E> implements Iterable<E> {
+
+        private final E[] array;
+
+        private ArrayIterable(E[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public Iterator<E> iterator() {
+            return new ArrayIterator<E>(array);
+        }
+
+    };
+
+    private static final class ArrayIterator<E> implements Iterator<E> {
+
+        private final E[] array;
+        private int position = 0;
+
+        private ArrayIterator(E[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return position < array.length;
+        }
+
+        @Override
+        public E next() {
+            return array[position];
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+    };
+
 }

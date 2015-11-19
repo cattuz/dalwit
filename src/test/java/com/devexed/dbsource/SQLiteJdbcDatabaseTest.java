@@ -1,8 +1,8 @@
 package com.devexed.dbsource;
 
-import com.devexed.dbsource.TransactionDatabase;
+import com.devexed.dbsource.jdbc.DefaultJdbcAccessorFactory;
+import com.devexed.dbsource.jdbc.FunctionJdbcGeneratedKeysSelector;
 import com.devexed.dbsource.jdbc.JdbcDatabase;
-import com.devexed.dbsource.jdbc.GeneratedKeysFunctionSelector;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
@@ -11,10 +11,12 @@ import java.util.Properties;
 
 import static org.junit.Assert.fail;
 
-public final class SQLiteJdbcDatabaseTest extends DatabaseTest {
+public class SQLiteJdbcDatabaseTest extends FileDatabaseTestCase {
 
-    @Rule
-    public TemporaryFolder dbFolder = new TemporaryFolder();
+    @Override
+    public File createDatabaseFile() throws Exception {
+        return File.createTempFile("test.sqlite.", ".db");
+    }
 
     @Override
     public TransactionDatabase openDatabase() {
@@ -24,10 +26,9 @@ public final class SQLiteJdbcDatabaseTest extends DatabaseTest {
             throw new RuntimeException(e);
         }
 
-        String dbPath = new File(dbFolder.getRoot(), "test.sqlite.db").getAbsolutePath();
-
-        return JdbcDatabase.openWritable("jdbc:sqlite:" + dbPath, new Properties(), JdbcDatabase.accessors,
-                new GeneratedKeysFunctionSelector("LAST_INSERT_ROWID()"));
+        return JdbcDatabase.openWritable("jdbc:sqlite:" + getDatabasePath(), new Properties(),
+                new DefaultJdbcAccessorFactory(),
+                new FunctionJdbcGeneratedKeysSelector("LAST_INSERT_ROWID()", Long.TYPE));
     }
 
 }

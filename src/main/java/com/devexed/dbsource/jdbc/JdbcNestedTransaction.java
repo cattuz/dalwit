@@ -10,7 +10,6 @@ import java.sql.Savepoint;
  */
 final class JdbcNestedTransaction extends JdbcTransaction {
 
-    private final JdbcTransaction parent;
 	private final Savepoint savepoint;
 
 	/**
@@ -19,7 +18,6 @@ final class JdbcNestedTransaction extends JdbcTransaction {
 	 */
 	JdbcNestedTransaction(JdbcTransaction parent) {
 		super(parent);
-        this.parent = parent;
 
 		try {
 			this.savepoint = parent.connection.setSavepoint();
@@ -36,14 +34,6 @@ final class JdbcNestedTransaction extends JdbcTransaction {
 	@Override
 	void rollbackTransaction() throws SQLException {
 		connection.rollback(savepoint);
-	}
-
-	@Override
-	public void close() {
-        if (isClosed()) return;
-
-		parent.closeActiveTransaction();
-        super.close();
 	}
 
 }

@@ -71,7 +71,7 @@ public final class Cursors {
             @SuppressWarnings("unchecked")
             public <T> T get(String column) {
                 if (!values.containsKey(column))
-                    throw new DatabaseException("No such column " + column + " in " + values.keySet());
+                    throw new DatabaseException("No such column " + column + " among " + values.keySet());
 
                 return (T) values.get(column);
             }

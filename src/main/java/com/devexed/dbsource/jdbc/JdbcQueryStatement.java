@@ -18,14 +18,14 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 		checkNotClosed();
 
 		try {
-			return new ResultSetCursor(new ResultSetCursor.AccessorFunction() {
+			return new ResultSetCursor(new ResultSetCursor.TypeFunction() {
 
 				@Override
-				public JdbcAccessor accessorOf(String column) {
-					return database.accessors.get(query.typeOf(column));
+				public Class<?> typeOf(String column) {
+					return query.typeOf(column);
 				}
 
-			}, statement.executeQuery());
+			}, database.accessorFactory, statement.executeQuery());
 		} catch (SQLException e) {
 			throw new DatabaseException(e);
 		}

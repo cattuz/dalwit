@@ -32,13 +32,13 @@ public interface GeneratedKeysSelector {
      *
      * @param database The database requiring the prepared statement.
      * @param statement The recently executed insertion statement prepared with {@link #prepareInsertStatement}.
-     * @param accessors The active JDBC accessors of the database.
+     * @param accessorFactory The active JDBC accessors of the database.
      * @param keys The generated keys requested to be returned after executing.
      * @return A cursor over the generated keys.
      * @throws SQLException If the generated keys could not be queried for any reason.
      */
-    Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
-                                       Map<Class<?>, JdbcAccessor> accessors, Map<String, Class<?>> keys)
+    Cursor selectGeneratedKeys(Database database, PreparedStatement statement, JdbcAccessorFactory accessorFactory,
+                               Map<String, Class<?>> keys)
             throws SQLException;
 
 }

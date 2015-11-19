@@ -13,14 +13,16 @@ import java.util.Map;
  * only the very last inserted id. Useful for databases whose JDBC implementation doesn't have getGeneratedKeys
  * support.</p>
  *
- * <p>For example, for SQLite one could use <code>new GeneratedKeysFunctionSelector("last_insert_rowid()")</code>.</p>
+ * <p>For example, for SQLite one could use <code>new FunctionJdbcGeneratedKeysSelector("last_insert_rowid()")</code>.</p>
  */
-public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelector {
+public final class FunctionJdbcGeneratedKeysSelector implements GeneratedKeysSelector {
 
     private final String lastGeneratedIdFunction;
+    private final Class<?> lastGeneratedIdType;
 
-    public GeneratedKeysFunctionSelector(String lastGeneratedIdFunction) {
+    public FunctionJdbcGeneratedKeysSelector(String lastGeneratedIdFunction, Class<?> lastGeneratedIdType) {
         this.lastGeneratedIdFunction = lastGeneratedIdFunction;
+        this.lastGeneratedIdType = lastGeneratedIdType;
     }
 
     @Override
@@ -31,24 +33,30 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
         String key = keys.keySet().iterator().next();
         Class<?> type = keys.get(key);
 
-        if (type != Long.TYPE) throw new DatabaseException("Generated key column must be of type Long.TYPE");
+        if (!type.equals(lastGeneratedIdType))
+            throw new DatabaseException("Generated key column must be a " + lastGeneratedIdType);
 
         return connection.prepareStatement(sql);
     }
 
     @Override
     public Cursor selectGeneratedKeys(Database database, PreparedStatement statement,
-                                      final Map<Class<?>, JdbcAccessor> accessors,
+                                      final JdbcAccessorFactory accessorFactory,
                                       final Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.
         final String key = keys.keySet().iterator().next();
-        final long generatedKey;
+        final Object generatedKey;
         ResultSet results = null;
 
         try {
             results = statement.getConnection().createStatement().executeQuery("SELECT " + lastGeneratedIdFunction);
             if (!results.next()) return EmptyCursor.of();
-            generatedKey = results.getLong(1);
+
+            JdbcAccessor accessor = accessorFactory.create(lastGeneratedIdType);
+
+            if (accessor == null) throw new DatabaseException("No accessor is defined for " + lastGeneratedIdType);
+
+            generatedKey = accessor.get(results, 0);
         } finally {
             if (results != null) results.close();
         }
@@ -58,9 +66,7 @@ public final class GeneratedKeysFunctionSelector implements GeneratedKeysSelecto
             @Override
             @SuppressWarnings("unchecked")
             public <E> E get(String column) {
-                if (!key.equals(column)) throw new DatabaseException("Column must be key column " + key);
-
-                return (E) (Long) generatedKey;
+                return (E) generatedKey;
             }
 
         });

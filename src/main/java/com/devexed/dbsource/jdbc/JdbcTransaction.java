@@ -7,24 +7,20 @@ import java.sql.SQLException;
 
 abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transaction {
 
+    private final JdbcAbstractDatabase parent;
 	private boolean committed = false;
-    private boolean hasChild = false;
 	
 	/**
 	 * Create a root level transaction. Committing this transaction will
 	 * update the database.
 	 */
 	JdbcTransaction(JdbcAbstractDatabase parent) {
-		super(parent.connection, parent.accessors, parent.generatedKeysSelector);
+		super(parent.connection, parent.accessorFactory, parent.generatedKeysSelector);
+        this.parent = parent;
 	}
 
     private void checkNotCommitted() {
         if (committed) throw new DatabaseException("Already committed");
-    }
-
-    /** Check if this transaction has an open child transaction. */
-    private void checkChildClosed() {
-        if (hasChild) throw new DatabaseException("Transaction has an open child transaction.");
     }
 
     final void checkActive() {
@@ -37,16 +33,13 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
 
     abstract void rollbackTransaction() throws SQLException;
 
-    final void closeActiveTransaction() {
-        hasChild = false;
-    }
-
     @Override
     public final Transaction transact() {
         checkActive();
 
-        hasChild = true;
-        return new JdbcNestedTransaction(this);
+        JdbcNestedTransaction transaction = new JdbcNestedTransaction(this);
+        onOpenChild(transaction);
+        return transaction;
     }
 
     @Override
@@ -62,18 +55,17 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     }
 
     @Override
-    public void close() {
+    public final void close() {
         if (isClosed()) return;
 
-        checkChildClosed();
+        super.close();
+        parent.onCloseChild();
 
         try {
             if (!committed) rollbackTransaction();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
-
-        super.close();
     }
 	
 }
