@@ -2,7 +2,7 @@ package com.devexed.dbsource;
 
 import java.io.Closeable;
 
-public interface ReadonlyDatabase extends Closeable {
+public interface ReadonlyDatabase extends Driver, Closeable {
 
     /**
      * Prepares a query into a statement that reads from the database.
@@ -11,9 +11,5 @@ public interface ReadonlyDatabase extends Closeable {
 
     @Override
     void close();
-
-    String getType();
-
-    String getVersion();
 
 }

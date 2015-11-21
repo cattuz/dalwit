@@ -201,8 +201,8 @@ public abstract class DatabaseTestCase extends TestCase {
         columnTypes.putAll(keys);
         columnTypes.put("a", String.class);
         Query createTable = Queries.builder()
-                .forType("H2", "CREATE TABLE t4 (id BIGINT PRIMARY KEY AUTO_INCREMENT, a VARCHAR(50) NOT NULL)")
-                .forType("SQLite", "CREATE TABLE t4 (id INTEGER PRIMARY KEY,               a VARCHAR(50) NOT NULL)")
+                .type("H2",     "CREATE TABLE t4 (id BIGINT PRIMARY KEY AUTO_INCREMENT, a VARCHAR(50) NOT NULL)")
+                .type("SQLite", "CREATE TABLE t4 (id INTEGER PRIMARY KEY,               a VARCHAR(50) NOT NULL)")
                 .build();
         Query insertQuery = Queries.of("INSERT INTO t4 (a) VALUES (:a)", columnTypes);
         Query selectQuery = Queries.of("SELECT id FROM t4", columnTypes);

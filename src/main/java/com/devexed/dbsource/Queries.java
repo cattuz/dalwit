@@ -8,6 +8,9 @@ import java.util.regex.Pattern;
  */
 public final class Queries {
 
+    // Hidden constructor
+    private Queries() {}
+
     /**
      * Builds a potentially complex query to handle multiple database types and versions.
      *
@@ -31,7 +34,7 @@ public final class Queries {
         return new Query() {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
                 parameterIndexes.putAll(queryParameterIndexes);
                 return querySql;
             }
@@ -65,10 +68,10 @@ public final class Queries {
         return new ConcatenatedQuery(queries) {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
                 StringBuilder queryBuilder = new StringBuilder();
 
-                for (Query query : queries) queryBuilder.append(query.create(database, parameterIndexes));
+                for (Query query : queries) queryBuilder.append(query.create(driver, parameterIndexes));
 
                 return queryBuilder.toString();
             }
@@ -95,15 +98,15 @@ public final class Queries {
         }}) {
 
             @Override
-            public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
                 ArrayList<String> stringArgList = new ArrayList<String>();
 
-                for (Query arg : args) stringArgList.add(arg.create(database, parameterIndexes));
+                for (Query arg : args) stringArgList.add(arg.create(driver, parameterIndexes));
 
                 String[] stringArgs = new String[stringArgList.size()];
                 stringArgList.toArray(stringArgs);
 
-                return String.format(query.create(database, parameterIndexes), (Object[]) stringArgs);
+                return String.format(query.create(driver, parameterIndexes), (Object[]) stringArgs);
             }
 
         };
@@ -245,143 +248,46 @@ public final class Queries {
         }
     }
 
-    private static abstract class QueryPermutation {
-
-        final String query;
-
-        QueryPermutation(String query) {
-            this.query = query;
-        }
-
-        final String getQuery() {
-            return query;
-        }
-
-        abstract boolean matchesDatabase(ReadonlyDatabase database);
-
-    }
-
-    private static class TypeQueryPermutation extends QueryPermutation {
-
-        final String type;
-
-        private TypeQueryPermutation(String type, String query) {
-            super(query);
-            this.type = type;
-        }
-
-        @Override
-        boolean matchesDatabase(ReadonlyDatabase database) {
-            return type.equals(database.getType());
-        }
-
-    }
-
-    private static final class PatternQueryPermutation extends TypeQueryPermutation {
-
-        final Pattern version;
-
-        private PatternQueryPermutation(String type, Pattern version, String query) {
-            super(type, query);
-            this.version = version;
-        }
-
-        @Override
-        public boolean matchesDatabase(ReadonlyDatabase database) {
-            return super.matchesDatabase(database) && version.matcher(database.getVersion()).find();
-
-        }
-
-    }
-
-    private static final class MinimumVersionQueryPermutation extends TypeQueryPermutation {
-
-        final int[] version;
-
-        private MinimumVersionQueryPermutation(String type, int[] version, String query) {
-            super(type, query);
-            this.version = version;
-        }
-
-        @Override
-        public boolean matchesDatabase(ReadonlyDatabase database) {
-            if (!super.matchesDatabase(database)) return false;
-
-            int versionIndex = 0;
-
-            for (String part : database.getType().split("\\.")) {
-                if (versionIndex >= version.length) break;
-
-                try {
-                    if (Integer.parseInt(part) < version[versionIndex]) return false;
-                } catch (Exception e) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-    }
-
     /**
      * A builder for complex queries.
      */
     public static final class QueryBuilder {
 
-        private final ArrayList<QueryPermutation> permutations = new ArrayList<QueryPermutation>();
-        private String defaultQuery = null;
+        private final ArrayList<PermutationQuery.Permutation> permutations =
+                new ArrayList<PermutationQuery.Permutation>();
 
-        private QueryBuilder() {
-        }
+        // Hidden constructor
+        private QueryBuilder() {}
 
         /**
-         * Add a query permutation only applicable to a certain database type.
+         * Add a query permutation only applicable to a certain database driver.
          *
-         * @param type  The database type for which the query is used.
+         * @param matcher  The driver matcher which when matched the supplied query is used.
          * @param query The query to use for this permutation.
          */
-        public QueryBuilder forType(String type, String query) {
-            permutations.add(new TypeQueryPermutation(type, query));
+        public QueryBuilder matcher(DriverMatcher matcher, String query) {
+            if (matcher == null) throw new NullPointerException("Driver matcher can't be null");
+            if (query == null) throw new NullPointerException("Query can't be null");
+
+            permutations.add(new PermutationQuery.Permutation(matcher, query));
+
             return this;
         }
 
-        /**
-         * Add a query permutation only applicable to a certain database type whose version string matches a certain
-         * regular expression.
-         *
-         * @param type           The database type for which the query is used.
-         * @param versionPattern The regular expression pattern to match against the database version.
-         * @param query          The query to use for this permutation.
-         */
-        public QueryBuilder forVersion(String type, Pattern versionPattern, String query) {
-            permutations.add(new PatternQueryPermutation(type, versionPattern, query));
-            return this;
+        public QueryBuilder type(String type, String query) {
+            return matcher(DriverMatchers.forType(type), query);
         }
 
-        /**
-         * Add a query permutation only applicable to a certain database type whose version string interpreted as a
-         * series of point-separated numbers is, in order, larger or equal to each of the integers in the minimum
-         * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
-         * but not "1.2" or "2.5.3".
-         *
-         * @param type           The database type for which the query is used.
-         * @param minimumVersion The regular expression pattern to match against the database version.
-         * @param query          The query to use for this permutation.
-         */
-        public QueryBuilder forVersion(String type, int[] minimumVersion, String query) {
-            permutations.add(new MinimumVersionQueryPermutation(type, minimumVersion, query));
-            return this;
+        public QueryBuilder patternVersion(String type, Pattern version, String query) {
+            return matcher(DriverMatchers.forPatternVersion(type, version), query);
         }
 
-        /**
-         * Supplies the fallback query to use when no other permutation matches.
-         *
-         * @param query The query to use as fallback.
-         */
-        public QueryBuilder forDefault(String query) {
-            defaultQuery = query;
-            return this;
+        public QueryBuilder minimumVersion(String type, int[] version, String query) {
+            return matcher(DriverMatchers.forMinimumVersion(type, version), query);
+        }
+
+        public QueryBuilder any(String query) {
+            return matcher(DriverMatchers.forAny(), query);
         }
 
         /**
@@ -397,32 +303,46 @@ public final class Queries {
          * @param types The types of the selected columns and parameters in the query.
          */
         public Query build(final Map<String, Class<?>> types) {
-            return new Query() {
+            return new PermutationQuery(permutations, types);
+        }
 
-                @Override
-                public String create(ReadonlyDatabase database, Map<String, ArrayList<Integer>> parameterIndexes) {
-                    String query = defaultQuery;
+    }
 
-                    for (QueryPermutation permutation : permutations) {
-                        if (permutation.matchesDatabase(database)) {
-                            query = permutation.query;
-                            break;
-                        }
-                    }
+    private static class PermutationQuery implements Query {
 
-                    if (query == null)
-                        throw new DatabaseException("No applicable query permutation found for database " + database);
+        private static final class Permutation {
 
-                    return query;
-                }
+            final DriverMatcher matcher;
+            final String query;
 
-                @Override
-                @SuppressWarnings("unchecked")
-                public <T> Class<T> typeOf(String name) {
-                    return (Class<T>) types.get(name);
-                }
+            Permutation(DriverMatcher matcher, String query) {
+                this.matcher = matcher;
+                this.query = query;
+            }
 
-            };
+        }
+
+        private final ArrayList<Permutation> permutations;
+        private final Map<String, Class<?>> types;
+
+        public PermutationQuery(ArrayList<Permutation> permutations, Map<String, Class<?>> types) {
+            this.permutations = permutations;
+            this.types = types;
+        }
+
+        @Override
+        public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
+            for (Permutation permutation : permutations) {
+                if (permutation.matcher.matches(driver)) return permutation.query;
+            }
+
+            throw new DatabaseException("No applicable query permutation found for database driver " + driver);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> Class<T> typeOf(String name) {
+            return (Class<T>) types.get(name);
         }
 
     }
