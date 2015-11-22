@@ -1,10 +1,11 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.Cursor;
-import com.devexed.dbsource.ReadonlyDatabase;
+import com.devexed.dbsource.AccessorFactory;
+import com.devexed.dbsource.util.CloseableCursor;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -14,23 +15,31 @@ import java.util.Map;
 public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeysSelector {
 
     @Override
-    public PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,
+    public PreparedStatement prepareInsertStatement(Connection connection, String sql,
                                                     Map<String, Class<?>> keyTypes) throws SQLException {
         return connection.prepareStatement(sql, keyTypes.keySet().toArray(new String[keyTypes.size()]));
     }
 
     @Override
-    public Cursor selectGeneratedKeys(ReadonlyDatabase database, PreparedStatement statement,
-                                      final JdbcAccessorFactory accessorFactory, final Map<String, Class<?>> keyTypes)
-            throws SQLException {
-        return new ResultSetCursor(new ResultSetCursor.TypeFunction() {
+    public CloseableCursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
+                                               AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
+                                               Map<String, Class<?>> keyTypes) throws SQLException {
+        return new ResultSetCursor(statement.getGeneratedKeys(), new KeyTypeFunction(keyTypes), accessorFactory);
+    }
 
-            @Override
-            public Class<?> typeOf(String column) {
-                return keyTypes.get(column);
-            }
+    private static class KeyTypeFunction implements ResultSetCursor.TypeFunction {
 
-        }, accessorFactory, statement.getGeneratedKeys());
+        private final Map<String, Class<?>> keyTypes;
+
+        public KeyTypeFunction(Map<String, Class<?>> keyTypes) {
+            this.keyTypes = keyTypes;
+        }
+
+        @Override
+        public Class<?> typeOf(String column) {
+            return keyTypes.get(column);
+        }
+
     }
 
 }

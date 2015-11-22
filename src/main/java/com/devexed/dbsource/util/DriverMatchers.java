@@ -1,4 +1,7 @@
-package com.devexed.dbsource;
+package com.devexed.dbsource.util;
+
+import com.devexed.dbsource.Driver;
+import com.devexed.dbsource.DriverMatcher;
 
 import java.util.regex.Pattern;
 
@@ -8,7 +11,8 @@ import java.util.regex.Pattern;
 public final class DriverMatchers {
 
     // Hidden constructor
-    private DriverMatchers() {}
+    private DriverMatchers() {
+    }
 
     /**
      * @return A driver matcher that matches any driver.
@@ -18,7 +22,7 @@ public final class DriverMatchers {
     }
 
     /**
-     * @return A driver matcher that matches no driver.
+     * @return A driver matcher that matches no driver. Exists for symmetry with {@link #forAny()}.
      */
     public static DriverMatcher forNone() {
         return new NoneDriverMatcher();
@@ -33,7 +37,7 @@ public final class DriverMatchers {
     }
 
     /**
-     * @param type The type of the driver to match.
+     * @param type    The type of the driver to match.
      * @param version The compiled version pattern of the driver version to match.
      * @return A driver matcher that matches a driver of a specific type and version pattern.
      */
@@ -42,12 +46,12 @@ public final class DriverMatchers {
     }
 
     /**
-     * Create a driver matcher only applicable to a certain database type whose version string interpreted as a
-     * series of point-separated numbers is, in order, larger or equal to each of the integers in the minimum
-     * version parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0"
-     * but not "1.2" or "2.5.3".
+     * Create a driver matcher only applicable to a certain database type whose version string interpreted as a series
+     * of point-separated numbers is, in order, larger or equal to each of the integers in the minimum version
+     * parameter. E.g. a specified minimum version of {2, 5, 8} matches the version string "2.5.9" and "3.0" but not
+     * "1.2" or "2.5.3".
      *
-     * @param type The type of the driver to match.
+     * @param type    The type of the driver to match.
      * @param version The minimum version of the driver to match.
      * @return A driver matcher that matches a driver of a specific type and minimum version.
      */

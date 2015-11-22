@@ -11,6 +11,12 @@ final class JdbcExecutionStatement extends JdbcStatement implements ExecutionSta
 
     public JdbcExecutionStatement(JdbcAbstractDatabase database, Query query) {
         super(database, query);
+
+        try {
+            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes)));
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
     }
 
     @Override

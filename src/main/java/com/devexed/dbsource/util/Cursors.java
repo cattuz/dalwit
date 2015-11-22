@@ -1,4 +1,6 @@
-package com.devexed.dbsource;
+package com.devexed.dbsource.util;
+
+import com.devexed.dbsource.DatabaseException;
 
 /**
  * Cursor helpers.
@@ -11,7 +13,7 @@ public final class Cursors {
      * @param columnFunction The function which gets the column values.
      * @return A cursor with a single row.
      */
-    public static Cursor singleton(ColumnFunction columnFunction) {
+    public static CloseableCursor singleton(ColumnFunction columnFunction) {
         return new SingletonCursor(columnFunction);
     }
 
@@ -24,7 +26,7 @@ public final class Cursors {
 
     }
 
-    private static final class SingletonCursor extends AbstractCloseable implements Cursor {
+    private static final class SingletonCursor extends AbstractCloseable implements CloseableCursor {
 
         private final ColumnFunction columnFunction;
         private boolean first = false;

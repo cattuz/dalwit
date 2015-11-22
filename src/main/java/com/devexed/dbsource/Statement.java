@@ -1,11 +1,9 @@
 package com.devexed.dbsource;
 
-import java.io.Closeable;
-
 /**
  * A statement to query or modify the database.
  */
-public interface Statement extends Closeable {
+public interface Statement {
 
     /**
      * Clears all bound parameter values from this statement.
@@ -20,8 +18,5 @@ public interface Statement extends Closeable {
      *                  this statement was generated from.
      */
     <T> void bind(String parameter, T value);
-
-    // Override to hide checked exceptions.
-    void close();
 
 }

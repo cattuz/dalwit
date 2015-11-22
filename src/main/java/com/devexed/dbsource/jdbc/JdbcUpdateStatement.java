@@ -11,6 +11,12 @@ final class JdbcUpdateStatement extends JdbcStatement implements UpdateStatement
 
     public JdbcUpdateStatement(JdbcAbstractDatabase database, Query query) {
         super(database, query);
+
+        try {
+            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes)));
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
     }
 
     @Override

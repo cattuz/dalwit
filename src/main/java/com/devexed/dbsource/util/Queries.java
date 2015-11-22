@@ -1,4 +1,9 @@
-package com.devexed.dbsource;
+package com.devexed.dbsource.util;
+
+import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.Driver;
+import com.devexed.dbsource.DriverMatcher;
+import com.devexed.dbsource.Query;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -9,7 +14,8 @@ import java.util.regex.Pattern;
 public final class Queries {
 
     // Hidden constructor
-    private Queries() {}
+    private Queries() {
+    }
 
     /**
      * Builds a potentially complex query to handle multiple database types and versions.
@@ -257,16 +263,17 @@ public final class Queries {
                 new ArrayList<PermutationQuery.Permutation>();
 
         // Hidden constructor
-        private QueryBuilder() {}
+        private QueryBuilder() {
+        }
 
         /**
          * Add a query permutation only applicable to a certain database driver.
          *
-         * @param matcher  The driver matcher which when matched the supplied query is used.
-         * @param query The query to use for this permutation.
+         * @param matcher The driver matcher which when matched the supplied query is used.
+         * @param query   The query to use for this permutation.
          */
         public QueryBuilder matcher(DriverMatcher matcher, String query) {
-            if (matcher == null) throw new NullPointerException("Driver matcher can't be null");
+            if (matcher == null) throw new NullPointerException("Matcher can't be null");
             if (query == null) throw new NullPointerException("Query can't be null");
 
             permutations.add(new PermutationQuery.Permutation(matcher, query));
@@ -310,21 +317,8 @@ public final class Queries {
 
     private static class PermutationQuery implements Query {
 
-        private static final class Permutation {
-
-            final DriverMatcher matcher;
-            final String query;
-
-            Permutation(DriverMatcher matcher, String query) {
-                this.matcher = matcher;
-                this.query = query;
-            }
-
-        }
-
         private final ArrayList<Permutation> permutations;
         private final Map<String, Class<?>> types;
-
         public PermutationQuery(ArrayList<Permutation> permutations, Map<String, Class<?>> types) {
             this.permutations = permutations;
             this.types = types;
@@ -343,6 +337,18 @@ public final class Queries {
         @SuppressWarnings("unchecked")
         public <T> Class<T> typeOf(String name) {
             return (Class<T>) types.get(name);
+        }
+
+        private static final class Permutation {
+
+            final DriverMatcher matcher;
+            final String query;
+
+            Permutation(DriverMatcher matcher, String query) {
+                this.matcher = matcher;
+                this.query = query;
+            }
+
         }
 
     }

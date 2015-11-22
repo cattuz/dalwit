@@ -6,7 +6,7 @@ import com.devexed.dbsource.jdbc.FunctionJdbcGeneratedKeysSelector;
 public class H2JdbcDatabaseTest extends JdbcFileDatabaseTestCase {
 
     public H2JdbcDatabaseTest() {
-        super("sqlite", "org.h2.Driver", "jdbc:h2:", new DefaultJdbcAccessorFactory(),
+        super("h2", "org.h2.Driver", "jdbc:h2:", new DefaultJdbcAccessorFactory(),
                 new FunctionJdbcGeneratedKeysSelector("SCOPE_IDENTITY()", Long.TYPE));
     }
 

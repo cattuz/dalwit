@@ -1,6 +1,11 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.*;
+import com.devexed.dbsource.Accessor;
+import com.devexed.dbsource.AccessorFactory;
+import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.EmptyCursor;
+import com.devexed.dbsource.util.CloseableCursor;
+import com.devexed.dbsource.util.Cursors;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,8 +31,8 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
     }
 
     @Override
-    public PreparedStatement prepareInsertStatement(ReadonlyDatabase database, Connection connection, String sql,
-                                                    Map<String, Class<?>> keys) throws SQLException {
+    public PreparedStatement prepareInsertStatement(Connection connection, String sql, Map<String, Class<?>> keys)
+            throws SQLException {
         if (keys.size() > 1) throw new DatabaseException("Only a single generated key column is supported.");
 
         String key = keys.keySet().iterator().next();
@@ -40,20 +45,19 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
     }
 
     @Override
-    public Cursor selectGeneratedKeys(ReadonlyDatabase database, PreparedStatement statement,
-                                      final JdbcAccessorFactory accessorFactory,
-                                      final Map<String, Class<?>> keys) throws SQLException {
+    public CloseableCursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
+                                               final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
+                                               final Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.
         final String key = keys.keySet().iterator().next();
         final Object generatedKey;
         ResultSet results = null;
 
         try {
-            results = statement.getConnection().createStatement().executeQuery("SELECT " + lastGeneratedIdFunction);
+            results = connection.createStatement().executeQuery("SELECT " + lastGeneratedIdFunction);
             if (!results.next()) return EmptyCursor.of();
 
-            JdbcAccessor accessor = accessorFactory.create(lastGeneratedIdType);
-
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(lastGeneratedIdType);
             if (accessor == null) throw new DatabaseException("No accessor is defined for " + lastGeneratedIdType);
 
             generatedKey = accessor.get(results, 0);

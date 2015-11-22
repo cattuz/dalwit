@@ -1,22 +1,26 @@
 package com.devexed.dbsource.jdbc;
 
-import com.devexed.dbsource.AbstractCloseable;
-import com.devexed.dbsource.Cursor;
+import com.devexed.dbsource.Accessor;
+import com.devexed.dbsource.AccessorFactory;
 import com.devexed.dbsource.DatabaseException;
+import com.devexed.dbsource.util.AbstractCloseable;
+import com.devexed.dbsource.util.CloseableCursor;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
  * A cursor over a JDBC result set.
  */
-final class ResultSetCursor extends AbstractCloseable implements Cursor {
+final class ResultSetCursor extends AbstractCloseable implements CloseableCursor {
 
-    private final TypeFunction typeOfFunction;
-    private final JdbcAccessorFactory accessorFactory;
     private final ResultSet resultSet;
+    private final TypeFunction typeOfFunction;
+    private final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
 
-    ResultSetCursor(TypeFunction typeOfFunction, JdbcAccessorFactory accessorFactory, ResultSet resultSet) {
+    ResultSetCursor(ResultSet resultSet, TypeFunction typeOfFunction,
+                    AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory) {
         this.typeOfFunction = typeOfFunction;
         this.accessorFactory = accessorFactory;
         this.resultSet = resultSet;
@@ -76,7 +80,7 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
             Class<?> type = typeOfFunction.typeOf(column);
             if (type == null) throw new DatabaseException("No such column " + column);
 
-            JdbcAccessor accessor = accessorFactory.create(type);
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(type);
             int index = resultSet.findColumn(column) - 1;
 
             return (T) accessor.get(resultSet, index);

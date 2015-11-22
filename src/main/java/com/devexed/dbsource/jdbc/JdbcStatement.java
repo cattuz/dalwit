@@ -1,28 +1,27 @@
 package com.devexed.dbsource.jdbc;
 
 import com.devexed.dbsource.*;
+import com.devexed.dbsource.util.AbstractCloseable;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
     final JdbcAbstractDatabase database;
     final Query query;
-    final PreparedStatement statement;
-    final LinkedHashMap<String, Class<?>> keys;
+    final HashMap<String, ArrayList<Integer>> parameterIndexes;
+    PreparedStatement statement;
 
-    private final HashMap<String, ArrayList<Integer>> parameterIndexes;
-
-    JdbcStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
+    JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this.database = database;
         this.query = query;
+        this.parameterIndexes = new HashMap<String, ArrayList<Integer>>();
 
-        try {
+        /*try {
             parameterIndexes = new HashMap<String, ArrayList<Integer>>();
             this.keys = new LinkedHashMap<String, Class<?>>();
 
@@ -34,11 +33,22 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
                     : database.connection.prepareStatement(query.create(database, parameterIndexes));
         } catch (SQLException e) {
             throw new DatabaseException(e);
-        }
+        }*/
     }
 
-    JdbcStatement(JdbcAbstractDatabase database, Query query) {
+    /*JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this(database, query, null);
+    }*/
+
+    final void setStatement(PreparedStatement statement) {
+        this.statement = statement;
+    }
+
+    void checkActiveDatabase(ReadonlyDatabase database) {
+        if (!(database instanceof JdbcAbstractDatabase))
+            throw new DatabaseException("Expecting " + ReadonlyDatabase.class + " not " + database.getClass());
+
+        ((JdbcAbstractDatabase) database).checkActive();
     }
 
     void checkActiveTransaction(Transaction transaction) {
@@ -68,7 +78,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
             ArrayList<Integer> indexes = parameterIndexes.get(parameter);
             if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
 
-            JdbcAccessor accessor = database.accessorFactory.create(type);
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(type);
             for (int index : indexes) accessor.set(statement, index, value);
         } catch (SQLException e) {
             throw new DatabaseException(e);

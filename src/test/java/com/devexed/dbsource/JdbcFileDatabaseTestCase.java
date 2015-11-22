@@ -1,21 +1,21 @@
 package com.devexed.dbsource;
 
 import com.devexed.dbsource.jdbc.DefaultJdbcAccessorFactory;
-import com.devexed.dbsource.jdbc.JdbcDatabase;
+import com.devexed.dbsource.jdbc.JdbcConnection;
 import com.devexed.dbsource.jdbc.JdbcGeneratedKeysSelector;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.util.Properties;
 
-public abstract class JdbcFileDatabaseTestCase extends FileDatabaseTestCase {
+public abstract class JdbcFileDatabaseTestCase extends DatabaseTestCase {
 
     private final String name;
     private final String driver;
     private final String prefix;
     private final DefaultJdbcAccessorFactory accessorFactory;
     private final JdbcGeneratedKeysSelector selector;
+
+    private File file;
 
     protected JdbcFileDatabaseTestCase(String name, String driver, String prefix,
                                        DefaultJdbcAccessorFactory accessorFactory,
@@ -28,24 +28,18 @@ public abstract class JdbcFileDatabaseTestCase extends FileDatabaseTestCase {
     }
 
     @Override
-    public final File createDatabaseFile() throws Exception {
-        return File.createTempFile("test." + name, ".db");
+    public Connection createConnection() {
+        try {
+            file = File.createTempFile("test." + name, ".db");
+            return new JdbcConnection(driver, prefix + file.getAbsolutePath(), new Properties(), accessorFactory, selector);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public final Database openDatabase() {
-        Connection connection;
-
-        try {
-            Class.forName(driver);
-            connection = DriverManager.getConnection(prefix + getDatabasePath());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        return JdbcDatabase.open(connection, accessorFactory, selector);
+    public void destroyConnection() {
+        if (!file.delete()) throw new RuntimeException("Failed to delete database file " + file.getAbsolutePath());
     }
 
 }

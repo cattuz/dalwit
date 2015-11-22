@@ -1,16 +1,19 @@
 package com.devexed.dbsource;
 
+import com.devexed.dbsource.util.AbstractCloseable;
+import com.devexed.dbsource.util.CloseableCursor;
+
 /**
  * An empty cursor. The cursor has no columns or rows.
  */
-public final class EmptyCursor extends AbstractCloseable implements Cursor {
+public final class EmptyCursor extends AbstractCloseable implements CloseableCursor {
 
     private static final EmptyCursor instance = new EmptyCursor();
 
     private EmptyCursor() {
     }
 
-    public static Cursor of() {
+    public static CloseableCursor of() {
         return instance;
     }
 

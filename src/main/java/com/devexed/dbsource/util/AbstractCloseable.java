@@ -1,11 +1,11 @@
-package com.devexed.dbsource;
+package com.devexed.dbsource.util;
 
-import java.io.Closeable;
+import com.devexed.dbsource.DatabaseException;
 
 /**
  * Base class to implement closeable objects.
  */
-public abstract class AbstractCloseable implements Closeable {
+public class AbstractCloseable implements Closeable {
 
     private boolean closed = false;
 
@@ -26,11 +26,10 @@ public abstract class AbstractCloseable implements Closeable {
     }
 
     /**
-     * Close this closable. A no-op if this closable has already been closed.
+     * Close this closable.
      */
     @Override
     public void close() {
-        if (isClosed()) return;
         closed = true;
     }
 

@@ -7,4 +7,11 @@ public interface InsertStatement extends Statement {
 
     Cursor insert(Transaction transaction);
 
+    /**
+     * Close a cursor opened by this statement.
+     *
+     * @param cursor The cursor to close.
+     */
+    void close(Cursor cursor);
+
 }

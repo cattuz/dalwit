@@ -1,47 +1,32 @@
 package com.devexed.dbsource.jdbc;
 
+import com.devexed.dbsource.AccessorFactory;
+import com.devexed.dbsource.Database;
 import com.devexed.dbsource.DatabaseException;
 import com.devexed.dbsource.Transaction;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class JdbcDatabase extends JdbcAbstractDatabase {
+final class JdbcDatabase extends JdbcAbstractDatabase {
 
-    private JdbcDatabase(Connection connection, JdbcAccessorFactory accessorFactory,
-                         JdbcGeneratedKeysSelector generatedKeysSelector) {
-        super(connection, accessorFactory, generatedKeysSelector);
-    }
-
-    public static JdbcDatabase open(Connection connection, JdbcAccessorFactory accessorFactory,
-                                    JdbcGeneratedKeysSelector generatedKeysSelector) {
-        try {
-            connection.setAutoCommit(false); // Needs to be false for transactions to work.
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
-        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
-    }
-
-    public static JdbcDatabase open(Connection connection) {
-        return open(connection, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
+    JdbcDatabase(Connection connection, AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
+                 JdbcGeneratedKeysSelector generatedKeysSelector) {
+        super(Database.class, connection, accessorFactory, generatedKeysSelector);
     }
 
     @Override
     public Transaction transact() {
-        checkChildClosed();
-        checkNotClosed();
-
+        checkActive();
         JdbcRootTransaction transaction = new JdbcRootTransaction(this);
-        onOpenChild(transaction);
+        openTransaction(transaction);
         return transaction;
     }
 
     @Override
     public void close() {
-        if (isClosed()) return;
-
         super.close();
 
         try {

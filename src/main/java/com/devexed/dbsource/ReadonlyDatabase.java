@@ -1,15 +1,17 @@
 package com.devexed.dbsource;
 
-import java.io.Closeable;
-
-public interface ReadonlyDatabase extends Driver, Closeable {
+public interface ReadonlyDatabase extends Driver {
 
     /**
      * Prepares a query into a statement that reads from the database.
      */
     QueryStatement createQuery(Query query);
 
-    @Override
-    void close();
+    /**
+     * Close a statement opened by this database.
+     *
+     * @param statement The statement to close.
+     */
+    void close(Statement statement);
 
 }
