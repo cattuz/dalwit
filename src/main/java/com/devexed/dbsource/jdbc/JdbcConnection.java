@@ -12,7 +12,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A driver which opens JDBC databases.
+ * A connection to a JDBC database.
  */
 public final class JdbcConnection implements Connection {
 
@@ -57,9 +57,7 @@ public final class JdbcConnection implements Connection {
             throw new DatabaseException(e);
         }
 
-        JdbcDatabase database = new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
-        databaseManager.open(database);
-        return database;
+        return databaseManager.open(new JdbcDatabase(connection, accessorFactory, generatedKeysSelector));
     }
 
     @Override

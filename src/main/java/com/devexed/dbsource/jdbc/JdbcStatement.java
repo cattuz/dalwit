@@ -20,25 +20,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
         this.database = database;
         this.query = query;
         this.parameterIndexes = new HashMap<String, ArrayList<Integer>>();
-
-        /*try {
-            parameterIndexes = new HashMap<String, ArrayList<Integer>>();
-            this.keys = new LinkedHashMap<String, Class<?>>();
-
-            if (keys != null) this.keys.putAll(keys);
-
-            statement = (keys != null)
-                    ? database.generatedKeysSelector.prepareInsertStatement(database, database.connection,
-                    query.create(database, parameterIndexes), keys)
-                    : database.connection.prepareStatement(query.create(database, parameterIndexes));
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }*/
     }
-
-    /*JdbcStatement(JdbcAbstractDatabase database, Query query) {
-        this(database, query, null);
-    }*/
 
     final void setStatement(PreparedStatement statement) {
         this.statement = statement;
@@ -46,14 +28,14 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
     void checkActiveDatabase(ReadonlyDatabase database) {
         if (!(database instanceof JdbcAbstractDatabase))
-            throw new DatabaseException("Expecting " + ReadonlyDatabase.class + " not " + database.getClass());
+            throw new DatabaseException("Expecting JDBC database");
 
         ((JdbcAbstractDatabase) database).checkActive();
     }
 
     void checkActiveTransaction(Transaction transaction) {
         if (!(transaction instanceof JdbcTransaction))
-            throw new DatabaseException("Expecting " + JdbcTransaction.class + " not " + transaction.getClass());
+            throw new DatabaseException("Expecting JDBC transaction");
 
         ((JdbcTransaction) transaction).checkActive();
     }

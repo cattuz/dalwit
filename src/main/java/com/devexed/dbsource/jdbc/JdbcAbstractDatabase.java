@@ -11,17 +11,18 @@ import java.util.Map;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
-    final String managerType;
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
-    private final CloseableManager<JdbcStatement> statementManager =
-            new CloseableManager<JdbcStatement>(Connection.class, Database.class);
+
+    private final Class<?> managerType;
+    private final CloseableManager<JdbcStatement> statementManager;
+
     private String type = null;
     private String version = null;
     private JdbcTransaction child = null;
 
-    JdbcAbstractDatabase(Class<?> managerClass, java.sql.Connection connection,
+    JdbcAbstractDatabase(Class<?> managerType, java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {
         try {
@@ -30,7 +31,8 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
             throw new DatabaseException(e);
         }
 
-        this.managerType = managerClass.getSimpleName();
+        this.managerType = managerType;
+        this.statementManager = new CloseableManager<JdbcStatement>(Connection.class, managerType);
         this.connection = connection;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
@@ -48,8 +50,10 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
      * Check if this transaction has an open child transaction.
      */
     final void checkTransaction(Transaction transaction) {
+        if (transaction == null) throw new NullPointerException("Child transaction is null");
+
         if (transaction != child)
-            throw new DatabaseException("Child transaction was not started by this " + managerType);
+            throw new DatabaseException("Child transaction was not started by this " + managerType.getSimpleName());
     }
 
     final JdbcTransaction openTransaction(JdbcTransaction child) {

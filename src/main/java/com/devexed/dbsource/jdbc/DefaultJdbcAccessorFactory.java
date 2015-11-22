@@ -1,5 +1,6 @@
 package com.devexed.dbsource.jdbc;
 
+import com.devexed.dbsource.AccessorFactory;
 import com.devexed.dbsource.DatabaseException;
 
 import java.io.InputStream;
@@ -12,7 +13,7 @@ import java.util.Map;
 /**
  * Accessor factory which maps the default JDBC types to classes.
  */
-public final class DefaultJdbcAccessorFactory implements JdbcAccessorFactory {
+public final class DefaultJdbcAccessorFactory implements AccessorFactory<PreparedStatement, ResultSet, SQLException> {
 
     /**
      * Definitions for core java accessors that have a corresponding JDBC setter and getter.
