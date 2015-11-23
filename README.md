@@ -1,6 +1,6 @@
 # Dalwit
 
-**Dalwit** is a <b>D</b>atabase <b>A</b>bstraction <b>L</b>ayer <b>w</b>ith <b>I</b>ntegrated <b>T</b>ransactions. Specifically it is an abstraction for communication with SQL databases in Java. Dalwit came about while examining ways of sharing database logic between Android applications and desktop Java applications. Failing to muster up any passion for implementing the quite massive JDBC interface for Android, I set upon creating a more minimal database abstraction. The Android implementation of Dalwit can be found at [dalwit-android](//github.com/cattuz/dalwit-android). The main features distinguishing it from the JDBC abstraction are:
+**Dalwit** is a <b>D</b>atabase <b>A</b>bstraction <b>L</b>ayer <b>w</b>ith <b>I</b>ntegrated <b>T</b>ransactions. Specifically it is an abstraction for communication with SQL databases in Java. Dalwit came about while examining ways of sharing database logic between Android applications and desktop Java applications. Failing to muster up any passion for implementing the quite massive JDBC interface for Android, I set upon creating a more minimal database abstraction. The Android implementation of Dalwit can be found at [dalwit-android](//github.com/cattuz/dalwit-android). The main features distinguishing Dalwit from JDBC are:
 
  * *First class transactions.* Where in JDBC using transactions means disabling auto commit and creating, committing and releasing savepoints, in Dalwit [transactions](#transactions) and nesting of transactions are part of the core interface.
  * *Driver dependent queries.* Dalwit features the possibility of defining query permutations for different database types and versions to bridge the gap where our dear Standard Query Language is not quite as standard as we would like it.
@@ -17,7 +17,7 @@ Where in pure JDBC you typically create open a connection with some reflection a
 try {
     Class.forName("org.h2.Driver");
     java.sql.Connection connection = DriverManager.getConnection("jdbc:h2:./test.db");
-} catch (ClassNotFoundException e) {
+} catch (ClassNotFoundException | SQLException e) {
     /* ... */
 }
 ```
@@ -50,8 +50,7 @@ Connection connection = new JdbcConnection(
 
 ```java
 // Creating the typed query
-Query countQuery = Queries.of("SELECT count(*) AS count FROM table",
-        Collections.singletonMap("count", Long.TYPE));
+Query countQuery = Queries.of("SELECT count(*) AS count FROM table", Collections.singletonMap("count", Long.TYPE));
 
 // The long form...
 Database database = null;
@@ -67,9 +66,7 @@ try {
 
 // ... or using provided utility methods for that Java 8 swagger
 Connections.write(connection, database -> {
-    Statements.query(database, countQuery, cursor -> {
-        System.out.println(cursor.get("count"))
-    });
+    Statements.query(database, countQuery, cursor -> System.out.println(cursor.get("count")));
 });
 ```
 
@@ -78,8 +75,7 @@ Connections.write(connection, database -> {
 Updating the database occurs within transactions which are explicitly committed or rolled back:
 
 ```java
-Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)",
-        Collections.singletonMap("a", String.class));
+Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)", Collections.singletonMap("a", String.class));
 Database database = null;
 Transaction transaction = null;
 
