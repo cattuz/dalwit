@@ -1,6 +1,6 @@
 package com.devexed.dalwit;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,10 +13,12 @@ public interface Query {
      *
      * @param driver           The driver to apply the query to, with type info to allow different queries for
      *                         different database drivers.
-     * @param parameterIndexes The indexes of the named parameters in the query.
+     * @param parameterIndexes The parameters mapped to the list of indexes of ? in the created string.
+     * @param indexParameters  The indexes mapped to the name of their associated parameter.
      * @return The query with indexed parameters.
      */
-    String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes);
+    String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                  Map<Integer, String> indexParameters);
 
     /**
      * Get the type of a named parameter or column in the query.

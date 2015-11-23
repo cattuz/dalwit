@@ -20,7 +20,7 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
         try {
             this.keys = new LinkedHashMap<String, Class<?>>(keys);
             setStatement(database.generatedKeysSelector.prepareInsertStatement(
-                    database.connection, query.create(database, parameterIndexes), keys));
+                    database.connection, query.create(database, parameterIndexes, indexParameters), keys));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

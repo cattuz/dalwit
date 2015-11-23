@@ -13,7 +13,8 @@ final class JdbcUpdateStatement extends JdbcStatement implements UpdateStatement
         super(database, query);
 
         try {
-            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes)));
+            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes,
+                    indexParameters)));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

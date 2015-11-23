@@ -13,7 +13,7 @@ final class JdbcExecutionStatement extends JdbcStatement implements ExecutionSta
         super(database, query);
 
         try {
-            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes)));
+            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes, indexParameters)));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

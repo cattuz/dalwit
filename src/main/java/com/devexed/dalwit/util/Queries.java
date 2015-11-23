@@ -33,14 +33,17 @@ public final class Queries {
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, ? extends Class<?>> types) {
-        final Map<String, ArrayList<Integer>> queryParameterIndexes = new HashMap<String, ArrayList<Integer>>();
-        final String querySql = parseParameterQuery(sql, queryParameterIndexes);
+        final Map<String, List<Integer>> queryParameterIndexes = new HashMap<String, List<Integer>>();
+        final Map<Integer, String> queryIndexParameters = new HashMap<Integer, String>();
+        final String querySql = parseParameterQuery(sql, queryParameterIndexes, queryIndexParameters);
 
         return new Query() {
 
             @Override
-            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                                 Map<Integer, String> indexParameters) {
                 parameterIndexes.putAll(queryParameterIndexes);
+                indexParameters.putAll(queryIndexParameters);
                 return querySql;
             }
 
@@ -62,7 +65,7 @@ public final class Queries {
     public static Query of(final String sql) {
         return of(sql, Collections.<String, Class<?>>emptyMap());
     }
-
+    
     /**
      * Concatenate multiple queries into one single query, including the types and parameters of all the concatenated.
      *
@@ -73,10 +76,11 @@ public final class Queries {
         return new ConcatenatedQuery(queries) {
 
             @Override
-            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                                 Map<Integer, String> indexParameters) {
                 StringBuilder queryBuilder = new StringBuilder();
 
-                for (Query query : queries) queryBuilder.append(query.create(driver, parameterIndexes));
+                for (Query query : queries) queryBuilder.append(query.create(driver, parameterIndexes, indexParameters));
 
                 return queryBuilder.toString();
             }
@@ -103,15 +107,16 @@ public final class Queries {
         }}) {
 
             @Override
-            public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
+            public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                                 Map<Integer, String> indexParameters) {
                 ArrayList<String> stringArgList = new ArrayList<String>();
 
-                for (Query arg : args) stringArgList.add(arg.create(driver, parameterIndexes));
+                for (Query arg : args) stringArgList.add(arg.create(driver, parameterIndexes, indexParameters));
 
                 String[] stringArgs = new String[stringArgList.size()];
                 stringArgList.toArray(stringArgs);
 
-                return String.format(query.create(driver, parameterIndexes), (Object[]) stringArgs);
+                return String.format(query.create(driver, parameterIndexes, indexParameters), (Object[]) stringArgs);
             }
 
         };
@@ -120,7 +125,7 @@ public final class Queries {
     public static Query format(Query query, Query... args) {
         return format(query, new ArrayIterable<Query>(args));
     }
-
+    
     /**
      * <p>Parse a query for named parameter named in the form of a colon (:) followed by
      * a java identifier and insert a ? at these occurrences.
@@ -135,10 +140,11 @@ public final class Queries {
      * @param parameterIndexes The map which to fill with parameter indexes.
      * @return The query with the named parameters replaced with ?.
      */
-    public static String parseParameterQuery(String query, Map<String, ArrayList<Integer>> parameterIndexes) {
+    public static String parseParameterQuery(String query, Map<String, List<Integer>> parameterIndexes,
+                                             Map<Integer, String> indexParameters) {
         StringBuilder queryBuilder = new StringBuilder();
         StringBuilder parameterBuilder = new StringBuilder();
-        int parameterIndex = 0;
+        int parameterIndex = indexParameters.size();
 
         /* Various ranges where parameters aren't parsed. Handling escaped characters inside the ranges is unnecessary
            because SQL handles escaping by doubling the character. The parser will simply immediately begin a new range
@@ -217,7 +223,7 @@ public final class Queries {
 
                 // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
                 String parameter = parameterBuilder.toString();
-                ArrayList<Integer> indexes = parameterIndexes.get(parameter);
+                List<Integer> indexes = parameterIndexes.get(parameter);
 
                 if (indexes == null) {
                     indexes = new ArrayList<Integer>();
@@ -225,6 +231,7 @@ public final class Queries {
                 }
 
                 indexes.add(parameterIndex);
+                indexParameters.put(parameterIndex, parameter);
                 parameterIndex++;
                 queryBuilder.append('?');
 
@@ -324,7 +331,8 @@ public final class Queries {
         }
 
         @Override
-        public String create(Driver driver, Map<String, ArrayList<Integer>> parameterIndexes) {
+        public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                             Map<Integer, String> indexParameters) {
             for (Permutation permutation : permutations) {
                 if (permutation.matcher.matches(driver)) return permutation.query;
             }

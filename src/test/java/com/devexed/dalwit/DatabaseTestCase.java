@@ -4,10 +4,7 @@ import com.devexed.dalwit.util.Queries;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -41,13 +38,14 @@ public abstract class DatabaseTestCase extends TestCase {
 
     public void testIgnoresParameterInSQLGroups() {
         Query insertQuery = Queries.of("INSERT INTO q (a AS ':b', a AS [:c]) VALUES (:a, \":d\")");
-        HashMap<String, ArrayList<Integer>> parameters = new HashMap<String, ArrayList<Integer>>();
-        insertQuery.create(db, parameters);
+        HashMap<String, List<Integer>> parameters = new HashMap<String, List<Integer>>();
+        HashMap<Integer, String> indexes = new HashMap<Integer, String>();
+        insertQuery.create(db, parameters, indexes);
 
-        assertTrue(parameters.containsKey("a"));
-        assertTrue(!parameters.containsKey("b"));
-        assertTrue(!parameters.containsKey("c"));
-        assertTrue(!parameters.containsKey("d"));
+        assertTrue(parameters.containsKey("a"));  // Should have been parsed as parameter
+        assertTrue(!parameters.containsKey("b")); // Should NOT have been parsed as parameter
+        assertTrue(!parameters.containsKey("c")); // -"-
+        assertTrue(!parameters.containsKey("d")); // -"-
     }
 
     public void testBindsTypedQueryParameter() {

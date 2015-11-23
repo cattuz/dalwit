@@ -14,7 +14,8 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
         super(database, query);
 
         try {
-            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes)));
+            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes,
+                    indexParameters)));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

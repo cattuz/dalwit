@@ -141,7 +141,7 @@ public final class Statements {
      * SELECT name, index FROM items WHERE index IN (:item_1,:item_2,:item_3)
      * </code></pre>
      *
-     * @param values            The iterable
+     * @param values            The iterable collection of values.
      * @param parameterPrefix   The prefix of the parameters in the list expresssion.
      * @param parametersBuilder The parameters builder which will contain the mapping of parameters to values.
      * @param stringBuilder     The builder of the string which will contain the joined list of parameters.
@@ -152,12 +152,14 @@ public final class Statements {
 
         if (it.hasNext()) {
             int index = 0;
-            String p0 = parameterPrefix + (index++);
+            String p0 = parameterPrefix + index;
+            index++;
             parametersBuilder.put(p0, it.next());
             stringBuilder.append(":").append(p0);
 
             while (it.hasNext()) {
-                String p = parameterPrefix + (index++);
+                String p = parameterPrefix + index;
+                index++;
                 parametersBuilder.put(p, it.next());
                 stringBuilder.append(",:").append(p);
             }
@@ -170,7 +172,8 @@ public final class Statements {
      * @return The string build by {@link #buildListExpression(Iterable, String, Map, StringBuilder)}
      * @see #buildListExpression(Iterable, String, Map, StringBuilder)
      */
-    public static <E> String buildListExpression(Iterable<E> values, String parameterPrefix, Map<String, E> parametersBuilder) {
+    public static <E> String buildListExpression(Iterable<E> values, String parameterPrefix,
+                                                 Map<String, E> parametersBuilder) {
         StringBuilder builder = new StringBuilder();
         buildListExpression(values, parameterPrefix, parametersBuilder, builder);
         return builder.toString();

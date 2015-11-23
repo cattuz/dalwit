@@ -8,18 +8,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
     final JdbcAbstractDatabase database;
     final Query query;
-    final HashMap<String, ArrayList<Integer>> parameterIndexes;
+    final HashMap<String, List<Integer>> parameterIndexes;
+    final HashMap<Integer, String> indexParameters;
     PreparedStatement statement;
 
     JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this.database = database;
         this.query = query;
-        this.parameterIndexes = new HashMap<String, ArrayList<Integer>>();
+        parameterIndexes = new HashMap<String, List<Integer>>();
+        indexParameters = new HashMap<Integer, String>();
     }
 
     final void setStatement(PreparedStatement statement) {
@@ -57,7 +60,7 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
             Class<?> type = query.typeOf(parameter);
             if (type == null) throw new DatabaseException("No such parameter " + parameter);
 
-            ArrayList<Integer> indexes = parameterIndexes.get(parameter);
+            List<Integer> indexes = parameterIndexes.get(parameter);
             if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
 
             Accessor<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessor = database.accessorFactory.create(type);
