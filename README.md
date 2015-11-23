@@ -50,7 +50,7 @@ Connection connection = new JdbcConnection(
 
 ```java
 // Creating the typed query
-Query countQuery = Queries.of("SELECT count(*) AS count FROM table", Collections.singletonMap("count", Long.TYPE));
+Query countQuery = Queries.of("SELECT count(*) AS c FROM t", Collections.singletonMap("c", Long.TYPE));
 
 // The long form...
 Database database = null;
@@ -58,15 +58,15 @@ Database database = null;
 try {
     database = connection.write();
     Cursor cursor = database.createQuery(countQuery).query(database);
-    System.out.println(cursor.get("count"))
+    System.out.println(cursor.get("c"))
 } finally {
     // Close methods ignore null and automatically close all their child resources
     connection.close(database);
 }
 
-// ... or using provided utility methods for that Java 8 swagger
+// ... or using provided utilities for that Java 8 swagger...
 Connections.write(connection, database -> {
-    Statements.query(database, countQuery, cursor -> System.out.println(cursor.get("count")));
+    Statements.query(database, countQuery, cursor -> System.out.println(cursor.get("c")));
 });
 ```
 
@@ -76,13 +76,17 @@ Updating the database occurs within transactions which are explicitly committed 
 
 ```java
 Query insertQuery = Queries.of("INSERT INTO t (a) VALUES (:a)", Collections.singletonMap("a", String.class));
+
+// The long form...
 Database database = null;
 Transaction transaction = null;
 
 try {
     database = connection.write();
     transaction = database.transact();
-    long count = transaction.createUpdate(insertQuery).update(transaction);
+    UpdateStatement statement = transaction.createUpdate(insertQuery);
+    statement.bind("a", "Text 123");
+    long count = statement.update(transaction);
     System.out.println("Success! Inserted " + count + " rows");
     
     // Committing the transaction if everything has gone smoothly
@@ -94,4 +98,12 @@ try {
 } finally {
     connection.close(database);
 }
+
+// ... or using utilities...
+Connections.write(connection, database -> {
+    UpdateStatement statement = transaction.createUpdate(insertQuery);
+    statement.bind("a", "Text 123");
+    long count = Statements.update(db, statement);
+    System.out.println("Success! Inserted " + count + " rows");
+});
 ```
