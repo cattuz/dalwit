@@ -92,8 +92,7 @@ try {
     // Committing the transaction if everything has gone smoothly
     database.commit(transaction);
 } catch (DatabaseException e) {
-    // Rolling back the transaction on any database exception. The rollback method is a
-    // no-op if transaction is null. 
+    // Rolling back the transaction on any database exception. The rollback method is a no-op if transaction is null. 
     database.rollback(transaction);
 } finally {
     connection.close(database);
@@ -101,7 +100,7 @@ try {
 
 // ... or using utilities...
 Connections.write(connection, database -> {
-    UpdateStatement statement = transaction.createUpdate(insertQuery);
+    UpdateStatement statement = database.createUpdate(insertQuery);
     statement.bind("a", "Text 123");
     long count = Statements.update(db, statement);
     System.out.println("Success! Inserted " + count + " rows");
