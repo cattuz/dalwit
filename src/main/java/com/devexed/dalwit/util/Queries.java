@@ -33,18 +33,12 @@ public final class Queries {
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, ? extends Class<?>> types) {
-        final Map<String, List<Integer>> queryParameterIndexes = new HashMap<String, List<Integer>>();
-        final Map<Integer, String> queryIndexParameters = new HashMap<Integer, String>();
-        final String querySql = parseParameterQuery(sql, queryParameterIndexes, queryIndexParameters);
-
         return new Query() {
 
             @Override
             public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
                                  Map<Integer, String> indexParameters) {
-                parameterIndexes.putAll(queryParameterIndexes);
-                indexParameters.putAll(queryIndexParameters);
-                return querySql;
+                return parseParameterQuery(sql, parameterIndexes, indexParameters);
             }
 
             @Override
@@ -109,6 +103,7 @@ public final class Queries {
             @Override
             public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
                                  Map<Integer, String> indexParameters) {
+                String queryString = query.create(driver, parameterIndexes, indexParameters);
                 ArrayList<String> stringArgList = new ArrayList<String>();
 
                 for (Query arg : args) stringArgList.add(arg.create(driver, parameterIndexes, indexParameters));
@@ -116,7 +111,7 @@ public final class Queries {
                 String[] stringArgs = new String[stringArgList.size()];
                 stringArgList.toArray(stringArgs);
 
-                return String.format(query.create(driver, parameterIndexes, indexParameters), (Object[]) stringArgs);
+                return String.format(queryString, (Object[]) stringArgs);
             }
 
         };
@@ -420,7 +415,7 @@ public final class Queries {
 
         @Override
         public E next() {
-            return array[position];
+            return array[position++];
         }
 
         @Override

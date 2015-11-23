@@ -36,6 +36,34 @@ public abstract class DatabaseTestCase extends TestCase {
         super.tearDown();
     }
 
+    public void testQueryConcat() {
+        Query a = Queries.of("SELECT :a FROM t ");
+        Query b = Queries.of("WHERE :b");
+        Query concat = Queries.concat(a, b);
+        final HashMap<String, List<Integer>> parameters = new HashMap<String, List<Integer>>();
+        final HashMap<Integer, String> indexes = new HashMap<Integer, String>();
+
+        assertEquals(concat.create(db, parameters, indexes), "SELECT ? FROM t WHERE ?");
+        assertEquals(parameters, new HashMap<String, List<Integer>>() {{
+            put(indexes.get(0), Collections.singletonList(0));
+            put(indexes.get(1), Collections.singletonList(1));
+        }});
+    }
+
+    public void testQueryFormat() {
+        Query a = Queries.of("SELECT :a FROM t %s");
+        Query b = Queries.of("WHERE :b");
+        Query format = Queries.format(a, b);
+        final HashMap<String, List<Integer>> parameters = new HashMap<String, List<Integer>>();
+        final HashMap<Integer, String> indexes = new HashMap<Integer, String>();
+
+        assertEquals(format.create(db, parameters, indexes), "SELECT ? FROM t WHERE ?");
+        assertEquals(parameters, new HashMap<String, List<Integer>>() {{
+            put(indexes.get(0), Collections.singletonList(0));
+            put(indexes.get(1), Collections.singletonList(1));
+        }});
+    }
+
     public void testIgnoresParameterInSQLGroups() {
         Query insertQuery = Queries.of("INSERT INTO q (a AS ':b', a AS [:c]) VALUES (:a, \":d\")");
         HashMap<String, List<Integer>> parameters = new HashMap<String, List<Integer>>();
