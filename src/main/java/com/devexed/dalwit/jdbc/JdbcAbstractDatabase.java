@@ -158,12 +158,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     }
 
     @Override
-    public void close() {
-        statementManager.close();
-        super.close();
-    }
-
-    @Override
     public String toString() {
         String url;
 

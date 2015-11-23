@@ -9,6 +9,7 @@ public interface Connection {
      * Open a writable database.
      *
      * @return A writable database.
+     * @throws DatabaseException If the database could not be opened for writing.
      */
     Database write();
 
@@ -16,14 +17,15 @@ public interface Connection {
      * Open a read only database.
      *
      * @return A read only database.
+     * @throws DatabaseException If the database could not be opened for reading.
      */
     ReadonlyDatabase read();
 
     /**
      * Close a database opened by this driver.
      *
-     * @param database The database opened by this driver to close. For convenience sake, if database is null this is
-     *                 a no-op.
+     * @param database The database opened by this driver to close. For convenience sake, if <code>database</code> is
+     *                 null this is a no-op.
      */
     void close(ReadonlyDatabase database);
 

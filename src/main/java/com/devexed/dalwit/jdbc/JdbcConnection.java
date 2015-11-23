@@ -24,6 +24,16 @@ public final class JdbcConnection implements Connection {
     private final CloseableManager<JdbcDatabase> databaseManager = new CloseableManager<JdbcDatabase>(Connection.class,
             Database.class, Collections.newSetFromMap(new ConcurrentHashMap<JdbcDatabase, Boolean>()));
 
+    /**
+     * Creates a connection object which can open databases for reading or writing using a JDBC driver.
+     * Creating the {@link JdbcConnection} itself is does not perform any connective action.
+     *
+     * @param driverClass           The JDBC driver class.
+     * @param url                   The JDBC connection url.
+     * @param properties            The JDBC connection properties.
+     * @param accessorFactory       The accessor factory creating accessors
+     * @param generatedKeysSelector The selector of generated keys after inserts.
+     */
     public JdbcConnection(String driverClass, String url, Properties properties,
                           AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                           JdbcGeneratedKeysSelector generatedKeysSelector) {
@@ -34,15 +44,30 @@ public final class JdbcConnection implements Connection {
         this.generatedKeysSelector = generatedKeysSelector;
     }
 
+    /**
+     * Creates a default JDBC connection, with the default accessor factory and generated key selector.
+     *
+     * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector)
+     */
     public JdbcConnection(String driverClass, String url, Properties properties) {
         this(driverClass, url, properties, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
     }
 
+    /**
+     * Creates a default JDBC connection, with the default properties, accessor factory, and generated key selector.
+     *
+     * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector)
+     */
     public JdbcConnection(String driverClass, String url) {
         this(driverClass, url, new Properties());
     }
 
-    private JdbcDatabase open() {
+    /**
+     * Open a {@link JdbcDatabase}.
+     * @param readonly The readonly flag of the JDBC connection.
+     * @return The opened database.
+     */
+    private JdbcDatabase open(boolean readonly) {
         try {
             Class.forName(driverClass);
         } catch (ClassNotFoundException e) {
@@ -53,6 +78,7 @@ public final class JdbcConnection implements Connection {
 
         try {
             connection = DriverManager.getConnection(url, properties);
+            connection.setReadOnly(readonly);
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
@@ -60,35 +86,36 @@ public final class JdbcConnection implements Connection {
         return databaseManager.open(new JdbcDatabase(connection, accessorFactory, generatedKeysSelector));
     }
 
+    /**
+     * Open a database for writing. This method is thread safe.
+     *
+     * @see Connection#write()
+     */
     @Override
     public Database write() {
-        JdbcDatabase database = open();
-
-        try {
-            database.connection.setReadOnly(false);
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
-        return database;
+        return open(false);
     }
 
+    /**
+     * Open a database for reading. This method is thread safe.
+     *
+     * @see Connection#write()
+     */
     @Override
     public ReadonlyDatabase read() {
-        JdbcDatabase database = open();
-
-        try {
-            database.connection.setReadOnly(true);
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
-        return write();
+        return open(true);
     }
 
     @Override
     public void close(ReadonlyDatabase database) {
         databaseManager.close(database);
+    }
+
+    /**
+     * Close all databases opened by this connection.
+     */
+    public void closeAll() {
+        databaseManager.close();
     }
 
 }
