@@ -46,7 +46,7 @@ Connection connection = new JdbcConnection(
         new FunctionJdbcGeneratedKeysSelector("scope_identity()", Long.TYPE));
 ```
 
-### Querying a database 
+### Querying 
 
 ```java
 // Creating the typed query
