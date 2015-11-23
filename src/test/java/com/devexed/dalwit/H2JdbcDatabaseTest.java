@@ -7,7 +7,7 @@ public class H2JdbcDatabaseTest extends JdbcFileDatabaseTestCase {
 
     public H2JdbcDatabaseTest() {
         super("h2", "org.h2.Driver", "jdbc:h2:", new DefaultJdbcAccessorFactory(),
-                new FunctionJdbcGeneratedKeysSelector("SCOPE_IDENTITY()", Long.TYPE));
+                new FunctionJdbcGeneratedKeysSelector("scope_identity()", Long.TYPE));
     }
 
 }

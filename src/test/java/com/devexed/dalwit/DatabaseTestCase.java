@@ -4,7 +4,10 @@ import com.devexed.dalwit.util.Queries;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -228,10 +231,9 @@ public abstract class DatabaseTestCase extends TestCase {
         InsertStatement insertStatement = db.createInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
         Cursor keyCursor = insertStatement.insert(transaction);
-        HashSet<Long> keyList = new HashSet<Long>();
-
-        while (keyCursor.next()) keyList.add(keyCursor.<Long>get("id"));
-
+        assertTrue(keyCursor.next());
+        long insertedKey = keyCursor.<Long>get("id");
+        assertFalse(keyCursor.next());
         insertStatement.close(keyCursor);
         db.commit(transaction);
 
@@ -241,13 +243,9 @@ public abstract class DatabaseTestCase extends TestCase {
         // Query to confirm only the inserted keys exist in the table.
         QueryStatement queryStatement = db.createQuery(selectQuery);
         Cursor cursor = queryStatement.query(db);
-        int containedKeyCount = 0;
-
-        while (cursor.next()) {
-            if (keyList.contains(cursor.<Long>get("id"))) containedKeyCount++;
-        }
-
-        assertEquals(keyList.size(), containedKeyCount);
+        assertTrue(cursor.next());
+        assertEquals((long) cursor.<Long>get("id"), insertedKey);
+        assertFalse(cursor.next());
         queryStatement.close(cursor);
     }
 
