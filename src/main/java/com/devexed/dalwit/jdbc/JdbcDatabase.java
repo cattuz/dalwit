@@ -28,6 +28,7 @@ final class JdbcDatabase extends JdbcAbstractDatabase {
 
     @Override
     public void close() {
+        statementManager.close();
         super.close();
 
         try {
