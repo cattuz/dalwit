@@ -1,12 +1,12 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 
-// Enforce 1.6 to maintain android compatibility.
+// Enforce 1.6 to maintain maximum compatibility.
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
-group 'com.devexed.dbsource'
-version '0.1'
+group 'com.devexed.dalwit'
+version '0.2'
 
 repositories {
     jcenter()
