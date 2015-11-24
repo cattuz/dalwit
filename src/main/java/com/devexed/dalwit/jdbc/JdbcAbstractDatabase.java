@@ -17,7 +17,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
 
-
     private String type = null;
     private String version = null;
     private JdbcTransaction child = null;
@@ -134,21 +133,18 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     @Override
     public UpdateStatement createUpdate(Query query) {
         checkNotClosed();
-
         return statementManager.open(new JdbcUpdateStatement(this, query));
     }
 
     @Override
     public ExecutionStatement createExecution(Query query) {
         checkNotClosed();
-
         return statementManager.open(new JdbcExecutionStatement(this, query));
     }
 
     @Override
     public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
         checkNotClosed();
-
         return statementManager.open(new JdbcInsertStatement(this, query, keys));
     }
 

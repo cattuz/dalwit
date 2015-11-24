@@ -22,7 +22,6 @@ public final class Statements {
             callback.call(cursor);
         } finally {
             if (cursor != null) statement.close(cursor);
-            database.close(statement);
         }
     }
 

@@ -4,7 +4,10 @@ import com.devexed.dalwit.util.Queries;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
