@@ -58,7 +58,7 @@ Database database = null;
 try {
     database = connection.write();
     Cursor cursor = database.createQuery(countQuery).query(database);
-    System.out.println(cursor.get("c"))
+    System.out.println(cursor.get("c"));
 } finally {
     // Close methods ignore null and automatically close all their child resources
     connection.close(database);
