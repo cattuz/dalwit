@@ -27,13 +27,13 @@ final class JdbcDatabase extends JdbcAbstractDatabase {
 
     @Override
     public void close() {
-        super.close();
-
         try {
             connection.close();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
+
+        super.close();
     }
 
 }

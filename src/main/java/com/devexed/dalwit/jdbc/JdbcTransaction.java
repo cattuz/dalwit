@@ -63,7 +63,8 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
             }
         }
 
-        super.close();
         parent.closeChildTransaction(this);
+        super.close();
     }
+
 }

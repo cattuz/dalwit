@@ -13,12 +13,24 @@ public final class Statements {
     private Statements() {
     }
 
+    public static Cursor query(final ReadonlyDatabase database, QueryStatement statement) {
+        Cursor cursor = null;
+
+        try {
+            cursor = statement.query();
+            return new ClosingCursor(statement, cursor);
+        } catch (DatabaseException e) {
+            if (cursor != null) cursor.close();
+            throw e;
+        }
+    }
+
     public static Cursor query(final ReadonlyDatabase database, Query query) {
         QueryStatement statement = null;
 
         try {
             statement = database.createQuery(query);
-            return new ClosingCursor(statement, statement.query());
+            return query(database, statement);
         } catch (DatabaseException e) {
             if (statement != null) statement.close();
             throw e;
@@ -27,11 +39,14 @@ public final class Statements {
 
     public static Cursor insert(final Database database, final InsertStatement statement) {
         Transaction transaction = null;
+        Cursor cursor = null;
 
         try {
             transaction = database.transact();
-            return new CommittingCursor(transaction, statement.insert());
+            cursor = statement.insert();
+            return new CommittingCursor(transaction, cursor);
         } catch (DatabaseException e) {
+            if (cursor != null) cursor.close();
             if (transaction != null) transaction.close();
             throw e;
         }

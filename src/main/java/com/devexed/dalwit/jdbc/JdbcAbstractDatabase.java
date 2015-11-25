@@ -43,6 +43,12 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
         }
     }
 
+    @Override
+    public void close() {
+        if (child != null) closeChildTransaction(child);
+        super.close();
+    }
+
     /**
      * Check if this transaction has an open child transaction.
      */
