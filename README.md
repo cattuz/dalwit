@@ -65,7 +65,7 @@ try {
 }
 
 // ... or using provided utilities for that Java 7 swagger...
-try (Database database = Connections.write(connection)) {
+try (CloseableDatabase database = Connections.write(connection)) {
     Cursor cursor = Statements.query(database, countQuery);
     System.out.println(cursor.get("c"));
 }
@@ -100,7 +100,7 @@ try {
 }
 
 // ... or using utilities...
-try (Database database = Connections.write(connection)) {
+try (ClosableDatabase database = Connections.write(connection)) {
     UpdateStatement statement = database.createUpdate(insertQuery);
     statement.bind("a", "Text 123");
     long count = Statements.update(db, statement);
