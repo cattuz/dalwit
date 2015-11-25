@@ -100,7 +100,7 @@ try {
 }
 
 // ... or using utilities...
-try (ClosableDatabase database = Connections.write(connection)) {
+try (CloseableDatabase database = Connections.write(connection)) {
     UpdateStatement statement = database.createUpdate(insertQuery);
     statement.bind("a", "Text 123");
     long count = Statements.update(db, statement);
