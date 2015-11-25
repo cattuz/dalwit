@@ -22,7 +22,7 @@ package com.devexed.dalwit;
  * <p>Note that random access through {@link #seek} is up to the implementation to define and not guaranteed to be
  * available.</p>
  */
-public interface Cursor {
+public interface Cursor extends Closeable {
 
     /**
      * Get the value of a column on the current row.

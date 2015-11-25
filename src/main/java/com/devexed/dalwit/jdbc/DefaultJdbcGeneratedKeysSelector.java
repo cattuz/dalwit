@@ -1,7 +1,7 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.AccessorFactory;
-import com.devexed.dalwit.util.CloseableCursor;
+import com.devexed.dalwit.Cursor;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,9 +21,9 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
     }
 
     @Override
-    public CloseableCursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
-                                               AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
-                                               Map<String, Class<?>> keyTypes) throws SQLException {
+    public Cursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
+                                      AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                                      Map<String, Class<?>> keyTypes) throws SQLException {
         return new ResultSetCursor(statement.getGeneratedKeys(), new KeyTypeFunction(keyTypes), accessorFactory);
     }
 

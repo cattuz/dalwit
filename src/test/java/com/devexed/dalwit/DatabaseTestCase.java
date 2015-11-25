@@ -22,7 +22,7 @@ public abstract class DatabaseTestCase extends TestCase {
     public abstract void destroyConnection();
 
     private void reopenDatabase() {
-        connection.close(db);
+        db.close();
         db = connection.write();
     }
 
@@ -34,7 +34,7 @@ public abstract class DatabaseTestCase extends TestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        connection.close(db);
+        db.close();
         destroyConnection();
         super.tearDown();
     }
@@ -87,10 +87,11 @@ public abstract class DatabaseTestCase extends TestCase {
         Query insertQuery = Queries.of("INSERT INTO q2 (a) VALUES (:a)", columnTypes);
 
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
+        db.createExecution(createTable).execute();
         UpdateStatement queryStatement = db.createUpdate(insertQuery);
         queryStatement.bind("a", 123);
-        db.commit(transaction);
+        transaction.commit();
+        transaction.close();
     }
 
     public void testBindWrongQueryParameterTypeThrows() {
@@ -101,7 +102,7 @@ public abstract class DatabaseTestCase extends TestCase {
         Query insertQuery = Queries.of("INSERT INTO q3 (a) VALUES (:a)", columnTypes);
 
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
+        db.createExecution(createTable).execute();
         UpdateStatement queryStatement = db.createUpdate(insertQuery);
 
         try {
@@ -111,11 +112,14 @@ public abstract class DatabaseTestCase extends TestCase {
             // Success if reached.
         }
 
-        db.commit(transaction);
+        transaction.commit();
+        transaction.close();
     }
 
     public void testEmptyTransaction() {
-        db.commit(db.transact());
+        Transaction transaction = db.transact();
+        transaction.commit();
+        transaction.close();
     }
 
     public void testTransactionCommits() {
@@ -126,22 +130,23 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
+        db.createExecution(createTable).execute();
         UpdateStatement updateStatement = db.createUpdate(insertQuery);
         updateStatement.bind("a", "committed");
-        assertEquals(1, updateStatement.update(transaction));
-        db.commit(transaction);
+        assertEquals(1, updateStatement.update());
+        transaction.commit();
+        transaction.close();
 
         // Re-open database to ensure persistence.
         reopenDatabase();
 
         // Query to confirm committal.
         QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query(db);
+        Cursor cursor = queryStatement.query();
         assertTrue(cursor.next());
         assertEquals("committed", cursor.get("a"));
         assertFalse(cursor.next());
-        queryStatement.close(cursor);
+        cursor.close();
     }
 
     public void testTransactionRollsBack() {
@@ -152,23 +157,24 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
-        db.commit(transaction);
+        db.createExecution(createTable).execute();
+        transaction.commit();
+        transaction.close();
 
         Transaction insertTransaction = db.transact();
         UpdateStatement updateStatement = db.createUpdate(insertQuery);
         updateStatement.bind("a", "committed");
-        assertEquals(1, updateStatement.update(insertTransaction));
-        db.rollback(insertTransaction);
+        assertEquals(1, updateStatement.update());
+        insertTransaction.close();
 
         // Re-open database to ensure persistence.
         reopenDatabase();
 
         // Query to confirm committal.
         QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query(db);
+        Cursor cursor = queryStatement.query();
         assertFalse(cursor.next());
-        queryStatement.close(cursor);
+        cursor.close();
     }
 
     public void testNestedTransactionsCommit() {
@@ -179,15 +185,16 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Start parent transaction.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute(transaction);
+        transaction.createExecution(createTable).execute();
 
         // Committed child transaction.
         {
             Transaction committedTransaction = transaction.transact();
             UpdateStatement updateStatement = db.createUpdate(insertQuery);
             updateStatement.bind("a", "should be committed");
-            assertEquals(1, updateStatement.update(committedTransaction));
-            transaction.commit(committedTransaction);
+            assertEquals(1, updateStatement.update());
+            committedTransaction.commit();
+            committedTransaction.close();
         }
 
         // Uncommitted child transaction.
@@ -195,30 +202,32 @@ public abstract class DatabaseTestCase extends TestCase {
             Transaction uncommittedTransaction = transaction.transact();
             UpdateStatement updateStatement = db.createUpdate(insertQuery);
             updateStatement.bind("a", "should not be committed");
-            assertEquals(1, updateStatement.update(uncommittedTransaction));
-            transaction.rollback(uncommittedTransaction);
+            assertEquals(1, updateStatement.update());
+            // Close without commit.
+            uncommittedTransaction.close();
         }
 
         // Commit parent transaction.
-        db.commit(transaction);
+        transaction.commit();
 
         // Close and reopen database to ensure data persistence.
         reopenDatabase();
 
         // Ensure only committed child transaction was stored.
         QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query(db);
+        Cursor cursor = queryStatement.query();
         assertTrue(cursor.next());
         assertEquals("should be committed", cursor.get("a"));
         assertFalse(cursor.next());
-        queryStatement.close(cursor);
+        cursor.close();
     }
 
     public void testCommitWithDanglingTransactionThrows() {
         try {
             Transaction transaction = db.transact();
-            transaction.transact();
-            db.commit(transaction);
+            transaction.transact(); // Dangle transaction
+            transaction.commit();
+            transaction.close();
             fail("Should throw");
         } catch (DatabaseException e) {
             // Should throw
@@ -228,8 +237,8 @@ public abstract class DatabaseTestCase extends TestCase {
     public void testRollbackWithDanglingTransactionThrows() {
         try {
             Transaction transaction = db.transact();
-            transaction.transact();
-            db.rollback(transaction);
+            transaction.transact(); // Dangle transaction
+            transaction.close();
             fail("Should throw");
         } catch (DatabaseException e) {
             // Should throw
@@ -256,26 +265,26 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
+        db.createExecution(createTable).execute();
         InsertStatement insertStatement = db.createInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
-        Cursor keyCursor = insertStatement.insert(transaction);
+        Cursor keyCursor = insertStatement.insert();
         assertTrue(keyCursor.next());
         long insertedKey = keyCursor.<Long>get("id");
         assertFalse(keyCursor.next());
-        insertStatement.close(keyCursor);
-        db.commit(transaction);
+        keyCursor.close();
+        transaction.commit();
 
         // Close and reopen database to ensure data persistence.
         reopenDatabase();
 
         // Query to confirm only the inserted keys exist in the table.
         QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query(db);
+        Cursor cursor = queryStatement.query();
         assertTrue(cursor.next());
         assertEquals((long) cursor.<Long>get("id"), insertedKey);
         assertFalse(cursor.next());
-        queryStatement.close(cursor);
+        cursor.close();
     }
 
     public void testStoreBigDecimal() {
@@ -292,22 +301,22 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute(transaction);
+        db.createExecution(createTable).execute();
         UpdateStatement updateStatement = db.createUpdate(insertQuery);
         updateStatement.bind("n", bigDecimal);
-        assertEquals(1, updateStatement.update(transaction));
-        db.commit(transaction);
+        assertEquals(1, updateStatement.update());
+        transaction.commit();
 
         // Close and reopen database to ensure data persistence.
         reopenDatabase();
 
         // Query to confirm committal.
         QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query(db);
+        Cursor cursor = queryStatement.query();
         assertTrue(cursor.next());
         assertEquals(bigDecimal, cursor.get("n"));
         assertFalse(cursor.next());
-        queryStatement.close(cursor);
+        cursor.close();
     }
 
 }

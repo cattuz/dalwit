@@ -1,6 +1,5 @@
 package com.devexed.dalwit.util;
 
-import com.devexed.dalwit.Closer;
 import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 
@@ -14,7 +13,7 @@ public final class Cursors {
      *
      * @return The empty cursor.
      */
-    public static CloseableCursor empty() {
+    public static Cursor empty() {
         return EmptyCursor.instance;
     }
 
@@ -24,27 +23,8 @@ public final class Cursors {
      * @param columnFunction The function which gets the column values.
      * @return A cursor with a single row.
      */
-    public static CloseableCursor singleton(ColumnFunction columnFunction) {
+    public static Cursor singleton(ColumnFunction columnFunction) {
         return new SingletonCursor(columnFunction);
-    }
-
-    /**
-     * Create a cursor with a close method that uses its creating statement to close the cursor. Useful for
-     * try-with-resources statements.
-     *
-     * @param closer The statement that created the cursor.
-     * @param cursor The cursor to make closeable.
-     * @return The closeable cursor.
-     */
-    public static CloseableCursor closeable(final Closer<Cursor> closer, final Cursor cursor) {
-        return new AbstractCloseableCursor(cursor) {
-
-            @Override
-            public void close() {
-                closer.close(cursor);
-            }
-
-        };
     }
 
     public interface ColumnFunction {
@@ -56,7 +36,7 @@ public final class Cursors {
 
     }
 
-    private static final class SingletonCursor extends AbstractCloseable implements CloseableCursor {
+    private static final class SingletonCursor extends AbstractCloseable implements Cursor {
 
         private final ColumnFunction columnFunction;
         private boolean first = false;
@@ -102,7 +82,7 @@ public final class Cursors {
 
     }
 
-    private static final class EmptyCursor extends AbstractCloseable implements CloseableCursor {
+    private static final class EmptyCursor extends AbstractCloseable implements Cursor {
 
         private static final EmptyCursor instance = new EmptyCursor();
 

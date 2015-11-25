@@ -2,7 +2,6 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
 import com.devexed.dalwit.util.AbstractCloseable;
-import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,8 +10,7 @@ import java.util.Map;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
-    private final Class<?> managerType;
-    final AbstractCloseableCloser<Statement, JdbcStatement> statementManager;
+    private final String managerType;
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
@@ -21,8 +19,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     private String version = null;
     private JdbcTransaction child = null;
 
-    JdbcAbstractDatabase(Class<?> managerType, AbstractCloseableCloser<Statement, JdbcStatement> statementManager,
-                         java.sql.Connection connection,
+    JdbcAbstractDatabase(String managerType, java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {
         try {
@@ -32,10 +29,18 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
         }
 
         this.managerType = managerType;
-        this.statementManager = statementManager;
         this.connection = connection;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
+    }
+
+    @Override
+    protected final boolean isClosed() {
+        try {
+            return super.isClosed() || connection.isClosed();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
     }
 
     /**
@@ -49,49 +54,23 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     /**
      * Check if this transaction has an open child transaction.
      */
-    final void checkTransaction(Transaction transaction) {
+    void checkChildTransaction(Transaction transaction) {
         if (transaction != child)
-            throw new DatabaseException("Child transaction was not started by this " + managerType.getSimpleName());
+            throw new DatabaseException("Child transaction was not started by this " + managerType);
+    }
+
+    /**
+     * Check if this transaction has an open child transaction.
+     */
+    final void closeChildTransaction(Transaction transaction) {
+        checkChildTransaction(transaction);
+        child = null;
     }
 
     final JdbcTransaction openTransaction(JdbcTransaction child) {
         checkActive();
         this.child = child;
         return child;
-    }
-
-    @Override
-    public void commit(Transaction transaction) {
-        if (transaction == null) throw new NullPointerException("Transaction is null");
-
-        checkTransaction(transaction);
-        child.checkActive();
-
-        try {
-            child.commitTransaction();
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
-        child.close();
-        child = null;
-    }
-
-    @Override
-    public void rollback(Transaction transaction) {
-        if (transaction == null) return;
-
-        checkTransaction(transaction);
-        child.checkActive();
-
-        try {
-            child.rollbackTransaction();
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
-        child.close();
-        child = null;
     }
 
     @Override
@@ -127,30 +106,25 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     @Override
     public QueryStatement createQuery(Query query) {
         checkNotClosed();
-        return statementManager.open(new JdbcQueryStatement(this, query));
+        return new JdbcQueryStatement(this, query);
     }
 
     @Override
     public UpdateStatement createUpdate(Query query) {
         checkNotClosed();
-        return statementManager.open(new JdbcUpdateStatement(this, query));
+        return new JdbcUpdateStatement(this, query);
     }
 
     @Override
     public ExecutionStatement createExecution(Query query) {
         checkNotClosed();
-        return statementManager.open(new JdbcExecutionStatement(this, query));
+        return new JdbcExecutionStatement(this, query);
     }
 
     @Override
     public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
         checkNotClosed();
-        return statementManager.open(new JdbcInsertStatement(this, query, keys));
-    }
-
-    @Override
-    public void close(Statement statement) {
-        statementManager.close(statement);
+        return new JdbcInsertStatement(this, query, keys);
     }
 
     @Override

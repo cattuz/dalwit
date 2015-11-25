@@ -2,7 +2,6 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.Query;
-import com.devexed.dalwit.Transaction;
 import com.devexed.dalwit.UpdateStatement;
 
 import java.sql.SQLException;
@@ -21,9 +20,8 @@ final class JdbcUpdateStatement extends JdbcStatement implements UpdateStatement
     }
 
     @Override
-    public long update(Transaction transaction) {
+    public long update() {
         checkNotClosed();
-        checkActiveTransaction(transaction);
 
         try {
             return statement.executeUpdate();

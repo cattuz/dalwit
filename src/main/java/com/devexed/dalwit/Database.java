@@ -44,20 +44,4 @@ public interface Database extends ReadonlyDatabase {
      */
     Transaction transact();
 
-    /**
-     * Commit the transaction previously started by this database.
-     *
-     * @param transaction The transaction previously started by this database.
-     * @throws DatabaseException If the transaction could not be committed.
-     */
-    void commit(Transaction transaction);
-
-    /**
-     * Roll back the transaction previously started by this database. If transaction is null this is a no-op.
-     *
-     * @param transaction The transaction previously started by this database.
-     * @throws DatabaseException If the transaction could not be rolled back.
-     */
-    void rollback(Transaction transaction);
-
 }

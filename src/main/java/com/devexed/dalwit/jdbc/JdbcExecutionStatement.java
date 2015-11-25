@@ -3,7 +3,6 @@ package com.devexed.dalwit.jdbc;
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.ExecutionStatement;
 import com.devexed.dalwit.Query;
-import com.devexed.dalwit.Transaction;
 
 import java.sql.SQLException;
 
@@ -20,9 +19,8 @@ final class JdbcExecutionStatement extends JdbcStatement implements ExecutionSta
     }
 
     @Override
-    public void execute(Transaction transaction) {
+    public void execute() {
         checkNotClosed();
-        checkActiveTransaction(transaction);
 
         try {
             statement.execute();

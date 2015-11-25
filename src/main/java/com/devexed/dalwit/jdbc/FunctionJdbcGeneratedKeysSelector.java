@@ -2,8 +2,8 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.Accessor;
 import com.devexed.dalwit.AccessorFactory;
+import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.util.CloseableCursor;
 import com.devexed.dalwit.util.Cursors;
 
 import java.sql.Connection;
@@ -44,9 +44,9 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
     }
 
     @Override
-    public CloseableCursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
-                                               final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
-                                               final Map<String, Class<?>> keys) throws SQLException {
+    public Cursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
+                                      final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                                      final Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.
         final String keyColumn = keys.keySet().iterator().next();
         final Object generatedKey;

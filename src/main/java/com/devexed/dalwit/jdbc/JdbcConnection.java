@@ -1,15 +1,12 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
-import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A connection to a JDBC database.
@@ -21,8 +18,6 @@ public final class JdbcConnection implements Connection {
     private final Properties properties;
     private final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     private final JdbcGeneratedKeysSelector generatedKeysSelector;
-    private final AbstractCloseableCloser<ReadonlyDatabase, JdbcDatabase> databaseManager = new AbstractCloseableCloser<ReadonlyDatabase, JdbcDatabase>(Connection.class,
-            Database.class, Collections.newSetFromMap(new ConcurrentHashMap<JdbcDatabase, Boolean>()));
 
     /**
      * Creates a connection object which can open databases for reading or writing using a JDBC driver.
@@ -83,7 +78,7 @@ public final class JdbcConnection implements Connection {
             throw new DatabaseException(e);
         }
 
-        return databaseManager.open(new JdbcDatabase(connection, accessorFactory, generatedKeysSelector));
+        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
     }
 
     /**
@@ -104,18 +99,6 @@ public final class JdbcConnection implements Connection {
     @Override
     public ReadonlyDatabase read() {
         return open(true);
-    }
-
-    @Override
-    public void close(ReadonlyDatabase database) {
-        databaseManager.close(database);
-    }
-
-    /**
-     * Close all databases opened by this connection.
-     */
-    public void closeAll() {
-        databaseManager.close();
     }
 
 }

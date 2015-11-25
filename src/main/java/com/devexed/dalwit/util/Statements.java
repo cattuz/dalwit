@@ -13,86 +13,50 @@ public final class Statements {
     private Statements() {
     }
 
-    public static CloseableCursor query(ReadonlyDatabase database, QueryStatement statement) {
-        Cursor cursor = null;
-
-        try {
-            cursor = statement.query(database);
-            return Cursors.closeable(statement, cursor);
-        } catch (DatabaseException e){
-            statement.close(cursor);
-            throw e;
-        }
-    }
-
-    public static CloseableCursor query(final ReadonlyDatabase database, Query query) {
+    public static Cursor query(final ReadonlyDatabase database, Query query) {
         QueryStatement statement = null;
 
         try {
             statement = database.createQuery(query);
-            final QueryStatement finalStatement = statement;
-            return new AbstractCloseableCursor(query(database, statement)) {
-                @Override
-                public void close() {
-                    database.close(finalStatement);
-                }
-            };
+            return new ClosingCursor(statement, statement.query());
         } catch (DatabaseException e) {
-            database.close(statement);
+            if (statement != null) statement.close();
             throw e;
         }
     }
 
-    public static CloseableCursor insert(final Database database, final InsertStatement statement) {
+    public static Cursor insert(final Database database, final InsertStatement statement) {
         Transaction transaction = null;
-        Cursor cursor = null;
 
         try {
             transaction = database.transact();
-            cursor = statement.insert(transaction);
-            final Transaction finalTransaction = transaction;
-            final Cursor finalCursor = cursor;
-
-            return new AbstractCloseableCursor(cursor) {
-
-                @Override
-                public void close() {
-                    statement.close(finalCursor);
-                    database.commit(finalTransaction);
-                }
-
-            };
+            return new CommittingCursor(transaction, statement.insert());
         } catch (DatabaseException e) {
-            statement.close(cursor);
-            database.rollback(transaction);
+            if (transaction != null) transaction.close();
             throw e;
         }
     }
 
-    public static CloseableCursor insert(final Database database, Query insert, Map<String, Class<?>> keys) {
+    public static Cursor insert(final Database database, Query insert, Map<String, Class<?>> keys) {
         InsertStatement statement = null;
 
         try {
             statement = database.createInsert(insert, keys);
-            final InsertStatement finalStatement = statement;
-            return new AbstractCloseableCursor(insert(database, statement)) {
-                @Override
-                public void close() {
-                    database.close(finalStatement);
-                }
-            };
+            return new ClosingCursor(statement, insert(database, statement));
         } catch (DatabaseException e) {
-            database.close(statement);
+            if (statement != null) statement.close();
             throw e;
         }
     }
 
     public static long update(Database database, UpdateStatement statement) {
-        ClosableTransaction transaction = null;
+        Transaction transaction = null;
 
         try {
-            transaction = Databases.transact(database);
-            return statement.update(transaction);
+            transaction = database.transact();
+            long count = statement.update();
+            transaction.commit();
+            return count;
         } finally {
             if (transaction != null) transaction.close();
         }
@@ -105,16 +69,17 @@ public final class Statements {
             statement = database.createUpdate(update);
             return update(database, statement);
         } finally {
-            database.close(statement);
+            if (statement != null) statement.close();
         }
     }
 
     public static void execute(Database database, final ExecutionStatement statement) {
-        ClosableTransaction transaction = null;
+        Transaction transaction = null;
 
         try {
-            transaction = Databases.transact(database);
-            statement.execute(transaction);
+            transaction = database.transact();
+            statement.execute();
+            transaction.commit();
         } finally {
             if (transaction != null) transaction.close();
         }
@@ -127,7 +92,7 @@ public final class Statements {
             statement = database.createExecution(execution);
             execute(database, statement);
         } finally {
-            database.close(statement);
+            if (statement != null) statement.close();
         }
     }
 
@@ -200,6 +165,81 @@ public final class Statements {
         StringBuilder builder = new StringBuilder();
         buildListExpression(values, parameterPrefix, parametersBuilder, builder);
         return builder.toString();
+    }
+
+    static final class ClosingCursor implements Cursor {
+
+        private final Closeable parent;
+        private final Cursor cursor;
+
+        ClosingCursor(Closeable parent, Cursor cursor) {
+            this.parent = parent;
+            this.cursor = cursor;
+        }
+
+        @Override
+        public <T> T get(String column) {
+            return cursor.get(column);
+        }
+
+        @Override
+        public boolean seek(int rows) {
+            return cursor.seek(rows);
+        }
+
+        @Override
+        public boolean previous() {
+            return cursor.previous();
+        }
+
+        @Override
+        public boolean next() {
+            return cursor.next();
+        }
+
+        @Override
+        public void close() {
+            parent.close();
+        }
+
+    }
+
+    static final class CommittingCursor implements Cursor {
+
+        private final Transaction parent;
+        private final Cursor cursor;
+
+        CommittingCursor(Transaction parent, Cursor cursor) {
+            this.parent = parent;
+            this.cursor = cursor;
+        }
+
+        @Override
+        public <T> T get(String column) {
+            return cursor.get(column);
+        }
+
+        @Override
+        public boolean seek(int rows) {
+            return cursor.seek(rows);
+        }
+
+        @Override
+        public boolean previous() {
+            return cursor.previous();
+        }
+
+        @Override
+        public boolean next() {
+            return cursor.next();
+        }
+
+        @Override
+        public void close() {
+            parent.commit();
+            parent.close();
+        }
+
     }
 
 }

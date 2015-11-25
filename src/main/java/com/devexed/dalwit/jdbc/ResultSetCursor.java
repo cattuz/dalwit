@@ -2,9 +2,9 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.Accessor;
 import com.devexed.dalwit.AccessorFactory;
+import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.util.AbstractCloseable;
-import com.devexed.dalwit.util.CloseableCursor;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,7 +13,7 @@ import java.sql.SQLException;
 /**
  * A cursor over a JDBC result set.
  */
-final class ResultSetCursor extends AbstractCloseable implements CloseableCursor {
+final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
     private final ResultSet resultSet;
     private final TypeFunction typeOfFunction;

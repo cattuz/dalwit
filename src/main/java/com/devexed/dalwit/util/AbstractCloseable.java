@@ -1,5 +1,6 @@
 package com.devexed.dalwit.util;
 
+import com.devexed.dalwit.Closeable;
 import com.devexed.dalwit.DatabaseException;
 
 /**

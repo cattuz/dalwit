@@ -6,7 +6,6 @@ import com.devexed.dalwit.util.AbstractCloseable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -65,6 +64,15 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
             Accessor<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessor = database.accessorFactory.create(type);
             for (int index : indexes) accessor.set(statement, index, value);
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
+
+    @Override
+    protected final boolean isClosed() {
+        try {
+            return super.isClosed() || statement.isClosed();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

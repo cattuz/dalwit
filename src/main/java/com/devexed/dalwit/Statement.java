@@ -3,7 +3,7 @@ package com.devexed.dalwit;
 /**
  * A statement to query or modify the database.
  */
-public interface Statement {
+public interface Statement extends Closeable {
 
     /**
      * Clears all bound parameter values from this statement.
