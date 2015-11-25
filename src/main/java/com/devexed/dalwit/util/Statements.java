@@ -25,14 +25,21 @@ public final class Statements {
         }
     }
 
-    public static CloseableCursor query(ReadonlyDatabase database, Query query) {
+    public static CloseableCursor query(final ReadonlyDatabase database, Query query) {
         QueryStatement statement = null;
 
         try {
             statement = database.createQuery(query);
-            return query(database, statement);
-        } finally {
+            final QueryStatement finalStatement = statement;
+            return new AbstractCloseableCursor(query(database, statement)) {
+                @Override
+                public void close() {
+                    database.close(finalStatement);
+                }
+            };
+        } catch (DatabaseException e) {
             database.close(statement);
+            throw e;
         }
     }
 
@@ -55,21 +62,28 @@ public final class Statements {
                 }
 
             };
-        } catch (DatabaseException e){
+        } catch (DatabaseException e) {
             statement.close(cursor);
             database.rollback(transaction);
             throw e;
         }
     }
 
-    public static CloseableCursor insert(Database database, Query insert, Map<String, Class<?>> keys) {
+    public static CloseableCursor insert(final Database database, Query insert, Map<String, Class<?>> keys) {
         InsertStatement statement = null;
 
         try {
             statement = database.createInsert(insert, keys);
-            return insert(database, statement);
-        } finally {
+            final InsertStatement finalStatement = statement;
+            return new AbstractCloseableCursor(insert(database, statement)) {
+                @Override
+                public void close() {
+                    database.close(finalStatement);
+                }
+            };
+        } catch (DatabaseException e) {
             database.close(statement);
+            throw e;
         }
     }
 
