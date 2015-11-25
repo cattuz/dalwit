@@ -4,7 +4,6 @@ import com.devexed.dalwit.*;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Helper class for statements.
@@ -14,66 +13,75 @@ public final class Statements {
     private Statements() {
     }
 
-    public static void query(ReadonlyDatabase database, QueryStatement statement, CursorCallback callback) {
+    public static CloseableCursor query(ReadonlyDatabase database, QueryStatement statement) {
         Cursor cursor = null;
 
         try {
             cursor = statement.query(database);
-            callback.call(cursor);
-        } finally {
-            if (cursor != null) statement.close(cursor);
+            return Cursors.closeable(statement, cursor);
+        } catch (DatabaseException e){
+            statement.close(cursor);
+            throw e;
         }
     }
 
-    public static void query(ReadonlyDatabase database, Query query, CursorCallback callback) {
+    public static CloseableCursor query(ReadonlyDatabase database, Query query) {
         QueryStatement statement = null;
 
         try {
             statement = database.createQuery(query);
-            query(database, statement, callback);
+            return query(database, statement);
         } finally {
             database.close(statement);
         }
     }
 
-    public static void insert(Database database, final InsertStatement statement, final CursorCallback callback) {
-        Transactions.transact(database, new Transactions.TransactionCallback() {
-            @Override
-            public void call(Transaction transaction) {
-                Cursor cursor = null;
+    public static CloseableCursor insert(final Database database, final InsertStatement statement) {
+        Transaction transaction = null;
+        Cursor cursor = null;
 
-                try {
-                    cursor = statement.insert(transaction);
-                    callback.call(cursor);
-                } finally {
-                    if (cursor != null) statement.close(cursor);
+        try {
+            transaction = database.transact();
+            cursor = statement.insert(transaction);
+            final Transaction finalTransaction = transaction;
+            final Cursor finalCursor = cursor;
+
+            return new AbstractCloseableCursor(cursor) {
+
+                @Override
+                public void close() {
+                    statement.close(finalCursor);
+                    database.commit(finalTransaction);
                 }
-            }
-        });
+
+            };
+        } catch (DatabaseException e){
+            statement.close(cursor);
+            database.rollback(transaction);
+            throw e;
+        }
     }
 
-    public static void insert(Database database, Query insert, Map<String, Class<?>> keys, CursorCallback callback) {
+    public static CloseableCursor insert(Database database, Query insert, Map<String, Class<?>> keys) {
         InsertStatement statement = null;
 
         try {
             statement = database.createInsert(insert, keys);
-            insert(database, statement, callback);
+            return insert(database, statement);
         } finally {
             database.close(statement);
         }
     }
 
-    public static long update(Database database, final UpdateStatement statement) {
-        final AtomicLong updated = new AtomicLong();
+    public static long update(Database database, UpdateStatement statement) {
+        ClosableTransaction transaction = null;
 
-        Transactions.transact(database, new Transactions.TransactionCallback() {
-            @Override
-            public void call(Transaction transaction) {
-                updated.set(statement.update(transaction));
-            }
-        });
-
-        return updated.get();
+        try {
+            transaction = Databases.transact(database);
+            return statement.update(transaction);
+        } finally {
+            if (transaction != null) transaction.close();
+        }
     }
 
     public static long update(Database database, Query update) {
@@ -88,12 +96,14 @@ public final class Statements {
     }
 
     public static void execute(Database database, final ExecutionStatement statement) {
-        Transactions.transact(database, new Transactions.TransactionCallback() {
-            @Override
-            public void call(Transaction transaction) {
-                statement.execute(transaction);
-            }
-        });
+        ClosableTransaction transaction = null;
+
+        try {
+            transaction = Databases.transact(database);
+            statement.execute(transaction);
+        } finally {
+            if (transaction != null) transaction.close();
+        }
     }
 
     public static void execute(Database database, Query execution) {
@@ -178,9 +188,4 @@ public final class Statements {
         return builder.toString();
     }
 
-    public interface CursorCallback {
-
-        void call(Cursor cursor);
-
-    }
 }

@@ -1,23 +1,24 @@
 package com.devexed.dalwit.util;
 
+import com.devexed.dalwit.Closer;
 import com.devexed.dalwit.DatabaseException;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class CloseableManager<R extends Closeable> extends AbstractCloseable {
+public class AbstractCloseableCloser<C, R extends Closeable> extends AbstractCloseable implements Closer<C> {
 
     protected final String managerName;
     protected final String resourceName;
     protected final Set<R> resources;
 
-    public CloseableManager(Class<?> managerClass, Class<?> resourceClass, Set<R> resources) {
+    public AbstractCloseableCloser(Class<?> managerClass, Class<?> resourceClass, Set<R> resources) {
         this.managerName = managerClass.getSimpleName();
         this.resourceName = resourceClass.getSimpleName();
         this.resources = resources;
     }
 
-    public CloseableManager(Class<?> managerClass, Class<?> resourceClass) {
+    public AbstractCloseableCloser(Class<?> managerClass, Class<?> resourceClass) {
         this(managerClass, resourceClass, new HashSet<R>());
     }
 
@@ -26,8 +27,9 @@ public class CloseableManager<R extends Closeable> extends AbstractCloseable {
         return resource;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
-    public void close(Object resource) {
+    public void close(C resource) {
         if (resource == null) return;
 
         R closeableResource = (R) resource;

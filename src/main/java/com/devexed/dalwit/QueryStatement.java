@@ -1,6 +1,6 @@
 package com.devexed.dalwit;
 
-public interface QueryStatement extends Statement {
+public interface QueryStatement extends Statement, Closer<Cursor> {
 
     /**
      * Query the database using this statement, returning a cursor over the rows returned.
@@ -16,6 +16,7 @@ public interface QueryStatement extends Statement {
      *
      * @param cursor The cursor to close.
      */
+    @Override
     void close(Cursor cursor);
 
 }

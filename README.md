@@ -64,10 +64,11 @@ try {
     connection.close(database);
 }
 
-// ... or using provided utilities for that Java 8 swagger...
-Connections.write(connection, database -> {
-    Statements.query(database, countQuery, cursor -> System.out.println(cursor.get("c")));
-});
+// ... or using provided utilities for that Java 7 swagger...
+try (Database database = Connections.write(connection)) {
+    Cursor cursor = Statements.query(database, countQuery);
+    System.out.println(cursor.get("c"));
+}
 ```
 
 ### <a name="transactions"></a>Transactions
@@ -99,10 +100,10 @@ try {
 }
 
 // ... or using utilities...
-Connections.write(connection, database -> {
+try (Database database = Connections.write(connection)) {
     UpdateStatement statement = database.createUpdate(insertQuery);
     statement.bind("a", "Text 123");
     long count = Statements.update(db, statement);
     System.out.println("Success! Inserted " + count + " rows");
-});
+}
 ```

@@ -1,6 +1,6 @@
 package com.devexed.dalwit;
 
-public interface ReadonlyDatabase extends Driver {
+public interface ReadonlyDatabase extends Driver, Closer<Statement> {
 
     /**
      * Prepares a query into a statement that reads from the database. IN SQL databases this is typically a SELECT
@@ -19,6 +19,7 @@ public interface ReadonlyDatabase extends Driver {
      * @param statement The statement to close.
      * @throws DatabaseException If the statement could not be closed.
      */
+    @Override
     void close(Statement statement);
 
 }

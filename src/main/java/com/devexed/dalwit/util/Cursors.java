@@ -1,5 +1,7 @@
 package com.devexed.dalwit.util;
 
+import com.devexed.dalwit.Closer;
+import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 
 /**
@@ -24,6 +26,25 @@ public final class Cursors {
      */
     public static CloseableCursor singleton(ColumnFunction columnFunction) {
         return new SingletonCursor(columnFunction);
+    }
+
+    /**
+     * Create a cursor with a close method that uses its creating statement to close the cursor. Useful for
+     * try-with-resources statements.
+     *
+     * @param closer The statement that created the cursor.
+     * @param cursor The cursor to make closeable.
+     * @return The closeable cursor.
+     */
+    public static CloseableCursor closeable(final Closer<Cursor> closer, final Cursor cursor) {
+        return new AbstractCloseableCursor(cursor) {
+
+            @Override
+            public void close() {
+                closer.close(cursor);
+            }
+
+        };
     }
 
     public interface ColumnFunction {

@@ -2,7 +2,7 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
 import com.devexed.dalwit.util.AbstractCloseable;
-import com.devexed.dalwit.util.CloseableManager;
+import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,7 +12,7 @@ import java.util.Map;
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
     private final Class<?> managerType;
-    final CloseableManager<JdbcStatement> statementManager;
+    final AbstractCloseableCloser<Statement, JdbcStatement> statementManager;
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
@@ -21,7 +21,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     private String version = null;
     private JdbcTransaction child = null;
 
-    JdbcAbstractDatabase(Class<?> managerType, CloseableManager<JdbcStatement> statementManager,
+    JdbcAbstractDatabase(Class<?> managerType, AbstractCloseableCloser<Statement, JdbcStatement> statementManager,
                          java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {

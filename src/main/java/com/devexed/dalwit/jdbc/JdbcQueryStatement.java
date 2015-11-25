@@ -1,14 +1,14 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
-import com.devexed.dalwit.util.CloseableManager;
+import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.SQLException;
 
 final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 
-    private final CloseableManager<ResultSetCursor> cursorManager =
-            new CloseableManager<ResultSetCursor>(QueryStatement.class, Cursor.class);
+    private final AbstractCloseableCloser<Cursor, ResultSetCursor> cursorManager =
+            new AbstractCloseableCloser<Cursor, ResultSetCursor>(QueryStatement.class, Cursor.class);
 
     public JdbcQueryStatement(JdbcAbstractDatabase database, Query query) {
         super(database, query);

@@ -1,7 +1,7 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
-import com.devexed.dalwit.util.CloseableManager;
+import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,7 +21,7 @@ public final class JdbcConnection implements Connection {
     private final Properties properties;
     private final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     private final JdbcGeneratedKeysSelector generatedKeysSelector;
-    private final CloseableManager<JdbcDatabase> databaseManager = new CloseableManager<JdbcDatabase>(Connection.class,
+    private final AbstractCloseableCloser<ReadonlyDatabase, JdbcDatabase> databaseManager = new AbstractCloseableCloser<ReadonlyDatabase, JdbcDatabase>(Connection.class,
             Database.class, Collections.newSetFromMap(new ConcurrentHashMap<JdbcDatabase, Boolean>()));
 
     /**

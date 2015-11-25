@@ -3,7 +3,7 @@ package com.devexed.dalwit;
 /**
  * A driver which can open a database for reading and writing.
  */
-public interface Connection {
+public interface Connection extends Closer<ReadonlyDatabase> {
 
     /**
      * Open a writable database.
@@ -27,6 +27,7 @@ public interface Connection {
      * @param database The database opened by this driver to close. For convenience sake, if <code>database</code> is
      *                 null this is a no-op.
      */
+    @Override
     void close(ReadonlyDatabase database);
 
 }

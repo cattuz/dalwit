@@ -3,7 +3,7 @@ package com.devexed.dalwit.util;
 import com.devexed.dalwit.Cursor;
 
 /**
- * FIXME Document!
+ * A cursor with a close method that closes the cursor using its parent.
  */
 public interface CloseableCursor extends Cursor, Closeable {
 

@@ -1,8 +1,8 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.*;
+import com.devexed.dalwit.util.AbstractCloseableCloser;
 import com.devexed.dalwit.util.CloseableCursor;
-import com.devexed.dalwit.util.CloseableManager;
 
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
@@ -11,8 +11,8 @@ import java.util.Map;
 final class JdbcInsertStatement extends JdbcStatement implements InsertStatement {
 
     private final LinkedHashMap<String, Class<?>> keys;
-    private final CloseableManager<CloseableCursor> cursorManager =
-            new CloseableManager<CloseableCursor>(InsertStatement.class, Cursor.class);
+    private final AbstractCloseableCloser<Cursor, CloseableCursor> cursorManager =
+            new AbstractCloseableCloser<Cursor, CloseableCursor>(InsertStatement.class, Cursor.class);
 
     public JdbcInsertStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
         super(database, query);

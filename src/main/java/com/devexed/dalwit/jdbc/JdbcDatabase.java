@@ -1,10 +1,7 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.AccessorFactory;
-import com.devexed.dalwit.Database;
-import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.Transaction;
-import com.devexed.dalwit.util.CloseableManager;
+import com.devexed.dalwit.*;
+import com.devexed.dalwit.util.AbstractCloseableCloser;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,7 +12,7 @@ final class JdbcDatabase extends JdbcAbstractDatabase {
 
     JdbcDatabase(Connection connection, AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                  JdbcGeneratedKeysSelector generatedKeysSelector) {
-        super(Database.class, new CloseableManager<JdbcStatement>(Connection.class, Database.class), connection, accessorFactory, generatedKeysSelector);
+        super(Database.class, new AbstractCloseableCloser<Statement, JdbcStatement>(Connection.class, Database.class), connection, accessorFactory, generatedKeysSelector);
     }
 
     @Override

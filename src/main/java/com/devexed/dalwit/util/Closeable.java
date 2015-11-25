@@ -1,10 +1,11 @@
 package com.devexed.dalwit.util;
 
 /**
- * Base class to implement closeable objects.
+ * A closable interface which doesn't throw any checked exceptions.
  */
-public interface Closeable {
+public interface Closeable extends java.io.Closeable {
 
+    @Override
     void close();
 
 }
