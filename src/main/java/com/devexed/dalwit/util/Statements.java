@@ -2,6 +2,7 @@ package com.devexed.dalwit.util;
 
 import com.devexed.dalwit.*;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -13,28 +14,21 @@ public final class Statements {
     private Statements() {
     }
 
-    public static Cursor query(final ReadonlyDatabase database, QueryStatement statement) {
-        Cursor cursor = null;
+    public static <E> Cursor query(final ReadonlyDatabase database, Query query, Map<String, E> parameters) {
+        QueryStatement statement = null;
 
         try {
-            cursor = statement.query();
-            return new ClosingCursor(statement, cursor);
+            statement = database.createQuery(query);
+            Statements.bindAll(statement, parameters);
+            return new ClosingCursor(statement, statement.query());
         } catch (DatabaseException e) {
-            if (cursor != null) cursor.close();
+            if (statement != null) statement.close();
             throw e;
         }
     }
 
     public static Cursor query(final ReadonlyDatabase database, Query query) {
-        QueryStatement statement = null;
-
-        try {
-            statement = database.createQuery(query);
-            return query(database, statement);
-        } catch (DatabaseException e) {
-            if (statement != null) statement.close();
-            throw e;
-        }
+        return query(database, query, Collections.<String, Object>emptyMap());
     }
 
     public static Cursor insert(final Database database, final InsertStatement statement) {
