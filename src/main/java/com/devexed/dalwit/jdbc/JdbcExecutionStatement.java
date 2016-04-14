@@ -21,6 +21,7 @@ final class JdbcExecutionStatement extends JdbcStatement implements ExecutionSta
     @Override
     public void execute() {
         checkNotClosed();
+        database.checkActive();
 
         try {
             statement.execute();

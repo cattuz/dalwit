@@ -22,7 +22,7 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
     @Override
     public Cursor query() {
         checkNotClosed();
-        checkActiveDatabase(database);
+        database.checkActive();
 
         try {
             return new ResultSetCursor(statement.executeQuery(), new ResultSetCursor.TypeFunction() {

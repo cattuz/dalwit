@@ -52,9 +52,16 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     /**
      * Check if this transaction has an open child transaction.
      */
+    final boolean hasChildTransaction() {
+        return child != null;
+    }
+
+    /**
+     * Check if this transaction has an open child transaction.
+     */
     final void checkActive() {
-        if (child != null) throw new DatabaseException("Child transaction is still open");
         checkNotClosed();
+        if (hasChildTransaction()) throw new DatabaseException("Transaction has an open child transaction");
     }
 
     /**
@@ -111,25 +118,25 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 
     @Override
     public QueryStatement createQuery(Query query) {
-        checkNotClosed();
+        checkActive();
         return new JdbcQueryStatement(this, query);
     }
 
     @Override
     public UpdateStatement createUpdate(Query query) {
-        checkNotClosed();
+        checkActive();
         return new JdbcUpdateStatement(this, query);
     }
 
     @Override
     public ExecutionStatement createExecution(Query query) {
-        checkNotClosed();
+        checkActive();
         return new JdbcExecutionStatement(this, query);
     }
 
     @Override
     public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
-        checkNotClosed();
+        checkActive();
         return new JdbcInsertStatement(this, query, keys);
     }
 

@@ -28,6 +28,7 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
     @Override
     public Cursor insert() {
         checkNotClosed();
+        database.checkActive();
 
         try {
             statement.executeUpdate();

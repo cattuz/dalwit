@@ -13,6 +13,47 @@ import java.util.regex.Pattern;
  */
 public final class Queries {
 
+    private static class StaticQuery implements Query {
+
+        private final String sql;
+        private final Map<String, ? extends Class<?>> types;
+
+        public StaticQuery(String sql, Map<String, ? extends Class<?>> types) {
+            this.sql = sql;
+            this.types = types;
+        }
+
+        @Override
+        public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
+                             Map<Integer, String> indexParameters) {
+            return parseParameterQuery(sql, parameterIndexes, indexParameters);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> Class<T> typeOf(String name) {
+            return (Class<T>) types.get(name);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            StaticQuery that = (StaticQuery) o;
+            return sql.equals(that.sql) && types.equals(that.types);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = sql.hashCode();
+            result = 31 * result + types.hashCode();
+            return result;
+        }
+
+    }
+
     // Hidden constructor
     private Queries() {}
 
@@ -33,21 +74,7 @@ public final class Queries {
      * @return A simple query.
      */
     public static Query of(final String sql, final Map<String, ? extends Class<?>> types) {
-        return new Query() {
-
-            @Override
-            public String create(Driver driver, Map<String, List<Integer>> parameterIndexes,
-                                 Map<Integer, String> indexParameters) {
-                return parseParameterQuery(sql, parameterIndexes, indexParameters);
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <T> Class<T> typeOf(String name) {
-                return (Class<T>) types.get(name);
-            }
-
-        };
+        return new StaticQuery(sql, types);
     }
 
     /**
@@ -87,7 +114,7 @@ public final class Queries {
     }
 
     /**
-     * Includes the created SQL from the argument queries in the specified query at %s in the query using
+     * Includes the created SQL from the argument queries in the specified query at %s in the query like
      * {@link String#format}.
      *
      * @param query The query to format.
@@ -375,7 +402,7 @@ public final class Queries {
             }
 
             if (types.isEmpty()) return null;
-            else if (types.size() > 0)
+            else if (types.size() > 1)
                 throw new DatabaseException("Multiple different types are defined for parameter with name " + name +
                         ": " + types);
 

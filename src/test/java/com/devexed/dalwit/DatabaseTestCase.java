@@ -48,8 +48,39 @@ public abstract class DatabaseTestCase extends TestCase {
 
         assertEquals(concat.create(db, parameters, indexes), "SELECT ? FROM t WHERE ?");
         assertEquals(parameters, new HashMap<String, List<Integer>>() {{
-            put(indexes.get(0), Collections.singletonList(0));
-            put(indexes.get(1), Collections.singletonList(1));
+            for (int i = 0; i < indexes.size(); i++) put(indexes.get(i), Collections.singletonList(i));
+        }});
+    }
+
+    public void testQueryConcatComplex() {
+        String table = "t";
+        String idColumn = "id";
+        String nameColumn = "name";
+        String typeColumn = "type";
+        String selectPrefix = "SELECT " +
+                idColumn + "," +
+                nameColumn + "," +
+                typeColumn;
+
+        String joinSql = " INNER JOIN %s ON %s = " + idColumn; // %s = field id column
+        String orderSql = " ORDER BY %s";
+        String whereSql = " WHERE %s";
+
+
+        Query a = Queries.of(selectPrefix + " FROM " + table + joinSql + whereSql + orderSql);
+        Query concat = Queries.format(a,
+                Queries.of(table),
+                Queries.of(table + "." + "fieldId"),
+                Queries.of("configId" + " = :" + "configId"),
+                Queries.of("position"));
+
+        final HashMap<String, List<Integer>> parameters = new HashMap<String, List<Integer>>();
+        final HashMap<Integer, String> indexes = new HashMap<Integer, String>();
+
+        concat.create(db, parameters, indexes);
+
+        assertEquals(parameters, new HashMap<String, List<Integer>>() {{
+            for (int i = 0; i < indexes.size(); i++) put(indexes.get(i), Collections.singletonList(i));
         }});
     }
 
@@ -87,8 +118,8 @@ public abstract class DatabaseTestCase extends TestCase {
         Query insertQuery = Queries.of("INSERT INTO q2 (a) VALUES (:a)", columnTypes);
 
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
-        UpdateStatement queryStatement = db.createUpdate(insertQuery);
+        transaction.createExecution(createTable).execute();
+        UpdateStatement queryStatement = transaction.createUpdate(insertQuery);
         queryStatement.bind("a", 123);
         transaction.commit();
         transaction.close();
@@ -102,8 +133,8 @@ public abstract class DatabaseTestCase extends TestCase {
         Query insertQuery = Queries.of("INSERT INTO q3 (a) VALUES (:a)", columnTypes);
 
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
-        UpdateStatement queryStatement = db.createUpdate(insertQuery);
+        transaction.createExecution(createTable).execute();
+        UpdateStatement queryStatement = transaction.createUpdate(insertQuery);
 
         try {
             queryStatement.bind("a", "test");
@@ -130,8 +161,8 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
-        UpdateStatement updateStatement = db.createUpdate(insertQuery);
+        transaction.createExecution(createTable).execute();
+        UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
         updateStatement.bind("a", "committed");
         assertEquals(1, updateStatement.update());
         transaction.commit();
@@ -157,12 +188,12 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
+        transaction.createExecution(createTable).execute();
         transaction.commit();
         transaction.close();
 
         Transaction insertTransaction = db.transact();
-        UpdateStatement updateStatement = db.createUpdate(insertQuery);
+        UpdateStatement updateStatement = insertTransaction.createUpdate(insertQuery);
         updateStatement.bind("a", "committed");
         assertEquals(1, updateStatement.update());
         insertTransaction.close();
@@ -190,7 +221,7 @@ public abstract class DatabaseTestCase extends TestCase {
         // Committed child transaction.
         {
             Transaction committedTransaction = transaction.transact();
-            UpdateStatement updateStatement = db.createUpdate(insertQuery);
+            UpdateStatement updateStatement = committedTransaction.createUpdate(insertQuery);
             updateStatement.bind("a", "should be committed");
             assertEquals(1, updateStatement.update());
             committedTransaction.commit();
@@ -200,7 +231,7 @@ public abstract class DatabaseTestCase extends TestCase {
         // Uncommitted child transaction.
         {
             Transaction uncommittedTransaction = transaction.transact();
-            UpdateStatement updateStatement = db.createUpdate(insertQuery);
+            UpdateStatement updateStatement = uncommittedTransaction.createUpdate(insertQuery);
             updateStatement.bind("a", "should not be committed");
             assertEquals(1, updateStatement.update());
             // Close without commit.
@@ -258,15 +289,15 @@ public abstract class DatabaseTestCase extends TestCase {
         columnTypes.put("a", String.class);
         Query createTable = Queries.builder()
                 .type("H2", "CREATE TABLE t4 (id BIGINT PRIMARY KEY AUTO_INCREMENT, a VARCHAR(50) NOT NULL)")
-                .type("SQLite", "CREATE TABLE t4 (id INTEGER PRIMARY KEY,               a VARCHAR(50) NOT NULL)")
+                .type("SQLite", "CREATE TABLE t4 (id INTEGER PRIMARY KEY, a VARCHAR(50) NOT NULL)")
                 .build();
         Query insertQuery = Queries.of("INSERT INTO t4 (a) VALUES (:a)", columnTypes);
         Query selectQuery = Queries.of("SELECT id FROM t4", columnTypes);
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
-        InsertStatement insertStatement = db.createInsert(insertQuery, keys);
+        transaction.createExecution(createTable).execute();
+        InsertStatement insertStatement = transaction.createInsert(insertQuery, keys);
         insertStatement.bind("a", "more text");
         Cursor keyCursor = insertStatement.insert();
         assertTrue(keyCursor.next());
@@ -301,8 +332,8 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        db.createExecution(createTable).execute();
-        UpdateStatement updateStatement = db.createUpdate(insertQuery);
+        transaction.createExecution(createTable).execute();
+        UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
         updateStatement.bind("n", bigDecimal);
         assertEquals(1, updateStatement.update());
         transaction.commit();

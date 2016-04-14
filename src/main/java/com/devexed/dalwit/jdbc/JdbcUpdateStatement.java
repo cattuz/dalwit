@@ -22,6 +22,7 @@ final class JdbcUpdateStatement extends JdbcStatement implements UpdateStatement
     @Override
     public long update() {
         checkNotClosed();
+        database.checkActive();
 
         try {
             return statement.executeUpdate();

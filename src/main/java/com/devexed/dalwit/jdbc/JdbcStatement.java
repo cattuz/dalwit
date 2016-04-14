@@ -35,13 +35,6 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
         ((JdbcAbstractDatabase) database).checkActive();
     }
 
-    void checkActiveTransaction(Transaction transaction) {
-        if (!(transaction instanceof JdbcTransaction))
-            throw new DatabaseException("Expecting JDBC transaction");
-
-        ((JdbcTransaction) transaction).checkActive();
-    }
-
     @Override
     public void clear() {
         try {
