@@ -64,17 +64,7 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
             if (results != null) results.close();
         }
 
-        return Cursors.singleton(new Cursors.ColumnFunction() {
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <E> E get(String column) {
-                if (!column.equals(keyColumn)) throw new DatabaseException("Column name must be " + keyColumn);
-
-                return (E) generatedKey;
-            }
-
-        });
+        return Cursors.singleton(keyColumn, generatedKey);
     }
 
 }

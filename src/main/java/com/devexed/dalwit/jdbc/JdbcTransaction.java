@@ -23,12 +23,6 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     abstract void rollbackTransaction() throws SQLException;
 
     @Override
-    void checkChildTransaction(Transaction transaction) {
-        super.checkChildTransaction(transaction);
-        parent.checkChildTransaction(this);
-    }
-
-    @Override
     public final Transaction transact() {
         checkActive();
         return openTransaction(new JdbcNestedTransaction(this));
@@ -37,7 +31,7 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     @Override
     public final void commit() {
         checkActive();
-        parent.checkChildTransaction(this);
+        parent.checkIsChildTransaction(this);
 
         try {
             commitTransaction();
@@ -49,11 +43,9 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     }
 
     @Override
-    public final void close() {
-        if (isClosed()) return;
-
+    void closeResource() {
         checkActive();
-        parent.checkChildTransaction(this);
+        parent.checkIsChildTransaction(this);
 
         if (!committed) {
             try {
@@ -64,7 +56,6 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
         }
 
         parent.closeChildTransaction(this);
-        super.close();
     }
 
 }

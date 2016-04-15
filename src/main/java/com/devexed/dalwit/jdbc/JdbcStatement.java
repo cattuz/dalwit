@@ -72,14 +72,14 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
     }
 
     @Override
-    public void close() {
-        super.close();
-
+    public final void close() {
         try {
             statement.close();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
+
+        super.close();
     }
 
 }

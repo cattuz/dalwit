@@ -31,14 +31,10 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         checkNotClosed();
 
         try {
-            if (resultSet.relative(rows)) return true;
+            return resultSet.relative(rows);
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
-
-        close();
-
-        return false;
     }
 
     @Override
@@ -46,14 +42,10 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         checkNotClosed();
 
         try {
-            if (resultSet.previous()) return true;
+            return resultSet.previous();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
-
-        close();
-
-        return false;
     }
 
     @Override
@@ -61,14 +53,10 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         checkNotClosed();
 
         try {
-            if (resultSet.next()) return true;
+            return resultSet.next();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
-
-        close();
-
-        return false;
     }
 
     @Override

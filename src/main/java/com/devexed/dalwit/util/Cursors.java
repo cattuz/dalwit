@@ -18,40 +18,37 @@ public final class Cursors {
     }
 
     /**
-     * Create a cursor with a single row, its columns accessible through a getter function.
+     * Create a cursor with a single column and row.
      *
-     * @param columnFunction The function which gets the column values.
-     * @return A cursor with a single row.
+     * @param key The name of the column.
+     * @param value The value for the cell.
+     * @return A cursor with a single column and row.
      */
-    public static Cursor singleton(ColumnFunction columnFunction) {
-        return new SingletonCursor(columnFunction);
-    }
-
-    public interface ColumnFunction {
-
-        /**
-         * Get the value for a specific column.
-         */
-        <E> E get(String column);
-
+    public static Cursor singleton(String key, Object value) {
+        return new SingletonCursor(key, value);
     }
 
     private static final class SingletonCursor extends AbstractCloseable implements Cursor {
 
-        private final ColumnFunction columnFunction;
+        private final String key;
+        private final Object value;
         private boolean first = false;
 
-        public SingletonCursor(ColumnFunction columnFunction) {
-            this.columnFunction = columnFunction;
-        }
-
+        @SuppressWarnings("unchecked")
         @Override
         public <T> T get(String column) {
             checkNotClosed();
 
             if (!first) throw new DatabaseException("Cursor points before first row");
 
-            return columnFunction.get(column);
+            if (!column.equals(key)) throw new DatabaseException("Column name must be " + key);
+
+            return (T) value;
+        }
+
+        public SingletonCursor(String key, Object value) {
+            this.key = key;
+            this.value = value;
         }
 
         @Override
@@ -64,8 +61,6 @@ public final class Cursors {
                 first = true;
                 return true;
             }
-
-            close();
 
             return false;
         }
@@ -92,7 +87,6 @@ public final class Cursors {
         @Override
         public boolean seek(int rows) {
             checkNotClosed();
-            close();
             return false;
         }
 
@@ -109,7 +103,7 @@ public final class Cursors {
         @Override
         public <T> T get(String column) {
             checkNotClosed();
-            throw new DatabaseException("Illegal cursor position.");
+            throw new DatabaseException("Illegal cursor position");
         }
 
     }

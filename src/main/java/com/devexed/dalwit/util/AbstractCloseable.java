@@ -15,7 +15,7 @@ public class AbstractCloseable implements Closeable {
      *                           operations.
      */
     protected final void checkNotClosed() {
-        if (isClosed()) throw new DatabaseException("Closed");
+        if (isClosed()) throw new DatabaseException("Already closed");
     }
 
     /**
@@ -31,6 +31,7 @@ public class AbstractCloseable implements Closeable {
      */
     @Override
     public void close() {
+        if (closed) throw new DatabaseException("Already closed");
         closed = true;
     }
 
