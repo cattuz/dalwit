@@ -2,6 +2,7 @@ package com.devexed.dalwit.util;
 
 import com.devexed.dalwit.*;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -13,13 +14,76 @@ public final class Statements {
     private Statements() {
     }
 
+    public static Cursor query(ReadonlyDatabase database, Query query) {
+        return query(database, query, Collections.<String, Object>emptyMap());
+    }
+
+    public static Cursor query(ReadonlyDatabase database, Query query, Map<String, ?> bindings) {
+        QueryStatement statement = null;
+
+        try {
+            statement = database.createQuery(query);
+            bindAll(statement, bindings);
+            return new ClosingCursor(statement, statement.query());
+        } catch (RuntimeException e) {
+            if (statement != null) statement.close();
+            throw e;
+        }
+    }
+
+    public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys) {
+        return insert(database, insert, keys, Collections.<String, Object>emptyMap());
+    }
+
+    public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys, Map<String, ?> bindings) {
+        Transaction transaction = null;
+        InsertStatement statement = null;
+
+        try {
+            transaction = database.transact();
+            statement = transaction.createInsert(insert, keys);
+            bindAll(statement, bindings);
+            return new CommittingCursor(transaction, statement, statement.insert());
+        } catch (RuntimeException e) {
+            if (statement != null) statement.close();
+            if (transaction != null) transaction.close();
+            throw e;
+        }
+    }
+
+    public static long update(Database database, Query update) {
+        return update(database, update, Collections.<String, Object>emptyMap());
+    }
+
+    public static long update(Database database, Query update, Map<String, ?> bindings) {
+        Transaction transaction = null;
+        UpdateStatement statement = null;
+
+        try {
+            transaction = database.transact();
+            statement = transaction.createUpdate(update);
+            bindAll(statement, bindings);
+            long count = statement.update();
+            transaction.commit();
+            return count;
+        } finally {
+            if (statement != null) statement.close();
+            if (transaction != null) transaction.close();
+        }
+    }
+
     public static void execute(Database database, Query execution) {
+        execute(database, execution, Collections.<String, Object>emptyMap());
+    }
+
+    public static void execute(Database database, Query execution, Map<String, ?> bindings) {
         Transaction transaction = null;
         ExecutionStatement statement = null;
 
         try {
             transaction = database.transact();
             statement = transaction.createExecution(execution);
+            bindAll(statement, bindings);
             statement.execute();
             transaction.commit();
         } finally {
@@ -99,81 +163,6 @@ public final class Statements {
         StringBuilder builder = new StringBuilder();
         buildListExpression(values, parameterPrefix, parametersBuilder, builder);
         return builder.toString();
-    }
-
-    static final class ClosingCursor implements Cursor {
-
-        private final Closeable parent;
-        private final Cursor cursor;
-
-        ClosingCursor(Closeable parent, Cursor cursor) {
-            this.parent = parent;
-            this.cursor = cursor;
-        }
-
-        @Override
-        public <T> T get(String column) {
-            return cursor.get(column);
-        }
-
-        @Override
-        public boolean seek(int rows) {
-            return cursor.seek(rows);
-        }
-
-        @Override
-        public boolean previous() {
-            return cursor.previous();
-        }
-
-        @Override
-        public boolean next() {
-            return cursor.next();
-        }
-
-        @Override
-        public void close() {
-            parent.close();
-        }
-
-    }
-
-    static final class CommittingCursor implements Cursor {
-
-        private final Transaction parent;
-        private final Cursor cursor;
-
-        CommittingCursor(Transaction parent, Cursor cursor) {
-            this.parent = parent;
-            this.cursor = cursor;
-        }
-
-        @Override
-        public <T> T get(String column) {
-            return cursor.get(column);
-        }
-
-        @Override
-        public boolean seek(int rows) {
-            return cursor.seek(rows);
-        }
-
-        @Override
-        public boolean previous() {
-            return cursor.previous();
-        }
-
-        @Override
-        public boolean next() {
-            return cursor.next();
-        }
-
-        @Override
-        public void close() {
-            parent.commit();
-            parent.close();
-        }
-
     }
 
 }
