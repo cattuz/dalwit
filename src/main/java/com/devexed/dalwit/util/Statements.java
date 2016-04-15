@@ -2,7 +2,6 @@ package com.devexed.dalwit.util;
 
 import com.devexed.dalwit.*;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -14,94 +13,18 @@ public final class Statements {
     private Statements() {
     }
 
-    public static <E> Cursor query(final ReadonlyDatabase database, Query query, Map<String, E> parameters) {
-        QueryStatement statement = null;
-
-        try {
-            statement = database.createQuery(query);
-            Statements.bindAll(statement, parameters);
-            return new ClosingCursor(statement, statement.query());
-        } catch (DatabaseException e) {
-            if (statement != null) statement.close();
-            throw e;
-        }
-    }
-
-    public static Cursor query(final ReadonlyDatabase database, Query query) {
-        return query(database, query, Collections.<String, Object>emptyMap());
-    }
-
-    public static Cursor insert(final Database database, final InsertStatement statement) {
-        Transaction transaction = null;
-        Cursor cursor = null;
-
-        try {
-            transaction = database.transact();
-            cursor = statement.insert();
-            return new CommittingCursor(transaction, cursor);
-        } catch (DatabaseException e) {
-            if (cursor != null) cursor.close();
-            if (transaction != null) transaction.close();
-            throw e;
-        }
-    }
-
-    public static Cursor insert(final Database database, Query insert, Map<String, Class<?>> keys) {
-        InsertStatement statement = null;
-
-        try {
-            statement = database.createInsert(insert, keys);
-            return new ClosingCursor(statement, insert(database, statement));
-        } catch (DatabaseException e) {
-            if (statement != null) statement.close();
-            throw e;
-        }
-    }
-
-    public static long update(Database database, UpdateStatement statement) {
-        Transaction transaction = null;
-
-        try {
-            transaction = database.transact();
-            long count = statement.update();
-            transaction.commit();
-            return count;
-        } finally {
-            if (transaction != null) transaction.close();
-        }
-    }
-
-    public static long update(Database database, Query update) {
-        UpdateStatement statement = null;
-
-        try {
-            statement = database.createUpdate(update);
-            return update(database, statement);
-        } finally {
-            if (statement != null) statement.close();
-        }
-    }
-
-    public static void execute(Database database, final ExecutionStatement statement) {
-        Transaction transaction = null;
-
-        try {
-            transaction = database.transact();
-            statement.execute();
-            transaction.commit();
-        } finally {
-            if (transaction != null) transaction.close();
-        }
-    }
-
     public static void execute(Database database, Query execution) {
+        Transaction transaction = null;
         ExecutionStatement statement = null;
 
         try {
-            statement = database.createExecution(execution);
-            execute(database, statement);
+            transaction = database.transact();
+            statement = transaction.createExecution(execution);
+            statement.execute();
+            transaction.commit();
         } finally {
             if (statement != null) statement.close();
+            if (transaction != null) transaction.close();
         }
     }
 
@@ -143,8 +66,10 @@ public final class Statements {
      * @param parametersBuilder The parameters builder which will contain the mapping of parameters to values.
      * @param stringBuilder     The builder of the string which will contain the joined list of parameters.
      */
-    public static <E> void buildListExpression(Iterable<E> values, String parameterPrefix,
-                                               Map<String, E> parametersBuilder, StringBuilder stringBuilder) {
+    public static <E> void buildListExpression(Iterable<E> values,
+                                               String parameterPrefix,
+                                               Map<String, E> parametersBuilder,
+                                               StringBuilder stringBuilder) {
         Iterator<E> it = values.iterator();
 
         if (it.hasNext()) {

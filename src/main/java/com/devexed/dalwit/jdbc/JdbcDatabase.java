@@ -14,7 +14,7 @@ final class JdbcDatabase extends JdbcAbstractDatabase {
     JdbcDatabase(Connection connection,
                  AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                  JdbcGeneratedKeysSelector generatedKeysSelector) {
-        super("database", connection, accessorFactory, generatedKeysSelector);
+        super(connection, accessorFactory, generatedKeysSelector);
     }
 
     @Override

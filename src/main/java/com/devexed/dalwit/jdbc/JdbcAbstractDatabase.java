@@ -6,11 +6,9 @@ import com.devexed.dalwit.util.AbstractCloseable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
-    private final String managerType;
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
@@ -19,7 +17,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     private String version = null;
     private JdbcTransaction child = null;
 
-    JdbcAbstractDatabase(String managerType, java.sql.Connection connection,
+    JdbcAbstractDatabase(java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {
         try {
@@ -28,7 +26,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
             throw new DatabaseException(e);
         }
 
-        this.managerType = managerType;
         this.connection = connection;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
@@ -122,24 +119,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     public QueryStatement createQuery(Query query) {
         checkActive();
         return new JdbcQueryStatement(this, query);
-    }
-
-    @Override
-    public UpdateStatement createUpdate(Query query) {
-        checkActive();
-        return new JdbcUpdateStatement(this, query);
-    }
-
-    @Override
-    public ExecutionStatement createExecution(Query query) {
-        checkActive();
-        return new JdbcExecutionStatement(this, query);
-    }
-
-    @Override
-    public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
-        checkActive();
-        return new JdbcInsertStatement(this, query, keys);
     }
 
     @Override
