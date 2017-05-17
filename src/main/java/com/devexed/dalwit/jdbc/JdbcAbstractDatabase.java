@@ -20,12 +20,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     JdbcAbstractDatabase(java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {
-        try {
-            connection.setAutoCommit(false); // Needs to be false for transactions to work.
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-
         this.connection = connection;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
