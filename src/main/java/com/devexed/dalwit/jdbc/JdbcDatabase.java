@@ -1,17 +1,16 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.AccessorFactory;
-import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.Transaction;
+import com.devexed.dalwit.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
-final class JdbcDatabase extends JdbcAbstractDatabase {
+public final class JdbcDatabase extends JdbcAbstractDatabase {
 
-    JdbcDatabase(Connection connection,
+    public JdbcDatabase(Connection connection,
                  AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
                  JdbcGeneratedKeysSelector generatedKeysSelector) {
         super(connection, accessorFactory, generatedKeysSelector);
@@ -23,6 +22,24 @@ final class JdbcDatabase extends JdbcAbstractDatabase {
         JdbcRootTransaction transaction = new JdbcRootTransaction(this);
         openTransaction(transaction);
         return transaction;
+    }
+
+    @Override
+    public UpdateStatement createUpdate(Query query) {
+        checkActive();
+        return new JdbcUpdateStatement(this, query);
+    }
+
+    @Override
+    public ExecutionStatement createExecution(Query query) {
+        checkActive();
+        return new JdbcExecutionStatement(this, query);
+    }
+
+    @Override
+    public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
+        checkActive();
+        return new JdbcInsertStatement(this, query, keys);
     }
 
     @Override

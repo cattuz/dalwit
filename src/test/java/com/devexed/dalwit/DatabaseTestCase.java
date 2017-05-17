@@ -4,10 +4,7 @@ import com.devexed.dalwit.util.Queries;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -142,7 +139,7 @@ public abstract class DatabaseTestCase extends TestCase {
 
         try {
             queryStatement.bind("a", "test");
-            //fail("Bound wrong type to parameter");
+            fail("Bound wrong type to parameter");
         } catch (Exception e) {
             // Success if reached.
         }
@@ -341,6 +338,44 @@ public abstract class DatabaseTestCase extends TestCase {
         assertEquals(bigDecimal, cursor.get("n"));
         assertFalse(cursor.next());
         cursor.close();
+    }
+
+    public void testDeepNestedTransactionsRollback() {
+        Map<String, Class<?>> columnTypes = Collections.<String, Class<?>>singletonMap("a", String.class);
+        Query createTable = Queries.of("CREATE TABLE t6 (a VARCHAR(50) NULL)");
+        Query insertQuery = Queries.of("INSERT INTO t6 (a) VALUES (:a)", columnTypes);
+        Query selectQuery = Queries.of("SELECT a FROM t6", columnTypes);
+
+        int transactionDepth = 15;
+        ArrayList<Transaction> transactions = new ArrayList<Transaction>(transactionDepth);
+        Transaction transaction = db.transact();
+        transactions.add(transaction);
+        transaction.createExecution(createTable).execute();
+
+        for (int i = 0; i < transactionDepth - 1; i++) {
+            transaction = transaction.transact();
+            transactions.add(transaction);
+
+            UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
+            updateStatement.bind("a", "should be committed");
+            assertEquals(1, updateStatement.update());
+        }
+
+        for (int i = transactionDepth - 1; i >= 1; i--) {
+            transaction.close();
+            transaction = transactions.get(i - 1);
+        }
+
+        transaction.commit();
+        transaction.close();
+
+        // Close and reopen database to ensure data persistence.
+        reopenDatabase();
+
+        // Ensure table is empty
+        QueryStatement queryStatement = db.createQuery(selectQuery);
+        Cursor cursor = queryStatement.query();
+        assertFalse(cursor.next());
     }
 
 }
