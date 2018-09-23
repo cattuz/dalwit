@@ -8,11 +8,11 @@ import java.sql.SQLException;
 
 final class JdbcExecutionStatement extends JdbcStatement implements ExecutionStatement {
 
-    public JdbcExecutionStatement(JdbcAbstractDatabase database, Query query) {
+    JdbcExecutionStatement(JdbcAbstractDatabase database, Query query) {
         super(database, query);
 
         try {
-            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes, indexParameters)));
+            assignStatement(database.connection.prepareStatement(query.createSql()));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

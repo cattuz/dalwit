@@ -2,11 +2,10 @@ package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
+import com.devexed.dalwit.DatabaseException;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -17,29 +16,27 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
     @Override
     public PreparedStatement prepareInsertStatement(Connection connection, String sql,
                                                     Map<String, Class<?>> keyTypes) throws SQLException {
-        return connection.prepareStatement(sql, keyTypes.keySet().toArray(new String[keyTypes.size()]));
+        return connection.prepareStatement(sql, keyTypes.keySet().toArray(new String[0]));
     }
 
     @Override
     public Cursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
-                                      AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                                      AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                                       Map<String, Class<?>> keyTypes) throws SQLException {
-        return new ResultSetCursor(statement.getGeneratedKeys(), new KeyTypeFunction(keyTypes), accessorFactory);
-    }
+        Map<String, Cursor.Getter<?>> columns = new HashMap<>();
+        ResultSet resultSet = statement.getGeneratedKeys();
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
-    private static class KeyTypeFunction implements ResultSetCursor.TypeFunction {
+        for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
+            String column = resultSetMetaData.getColumnName(i + 1);
+            Class<?> keyType = keyTypes.get(column);
 
-        private final Map<String, Class<?>> keyTypes;
+            if (keyType == null) throw new DatabaseException("Missing type for generated key column " + column);
 
-        public KeyTypeFunction(Map<String, Class<?>> keyTypes) {
-            this.keyTypes = keyTypes;
+            columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessorFactory.create(keyType), resultSet, i));
         }
 
-        @Override
-        public Class<?> typeOf(String column) {
-            return keyTypes.get(column);
-        }
-
+        return new ResultSetCursor(resultSet, columns);
     }
 
 }

@@ -9,13 +9,14 @@ import java.util.Map;
 /**
  * Helper class for statements.
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public final class Statements {
 
     private Statements() {
     }
 
     public static Cursor query(ReadonlyDatabase database, Query query) {
-        return query(database, query, Collections.<String, Object>emptyMap());
+        return query(database, query, Collections.emptyMap());
     }
 
     public static Cursor query(ReadonlyDatabase database, Query query, Map<String, ?> bindings) {
@@ -32,7 +33,7 @@ public final class Statements {
     }
 
     public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys) {
-        return insert(database, insert, keys, Collections.<String, Object>emptyMap());
+        return insert(database, insert, keys, Collections.emptyMap());
     }
 
     public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys, Map<String, ?> bindings) {
@@ -52,43 +53,27 @@ public final class Statements {
     }
 
     public static long update(Database database, Query update) {
-        return update(database, update, Collections.<String, Object>emptyMap());
+        return update(database, update, Collections.emptyMap());
     }
 
     public static long update(Database database, Query update, Map<String, ?> bindings) {
-        Transaction transaction = null;
-        UpdateStatement statement = null;
-
-        try {
-            transaction = database.transact();
-            statement = transaction.createUpdate(update);
+        try (Transaction transaction = database.transact(); UpdateStatement statement = transaction.createUpdate(update)) {
             bindAll(statement, bindings);
             long count = statement.update();
             transaction.commit();
             return count;
-        } finally {
-            if (statement != null) statement.close();
-            if (transaction != null) transaction.close();
         }
     }
 
     public static void execute(Database database, Query execution) {
-        execute(database, execution, Collections.<String, Object>emptyMap());
+        execute(database, execution, Collections.emptyMap());
     }
 
     public static void execute(Database database, Query execution, Map<String, ?> bindings) {
-        Transaction transaction = null;
-        ExecutionStatement statement = null;
-
-        try {
-            transaction = database.transact();
-            statement = transaction.createExecution(execution);
+        try (Transaction transaction = database.transact(); ExecutionStatement statement = transaction.createExecution(execution)) {
             bindAll(statement, bindings);
             statement.execute();
             transaction.commit();
-        } finally {
-            if (statement != null) statement.close();
-            if (transaction != null) transaction.close();
         }
     }
 

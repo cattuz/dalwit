@@ -1,7 +1,6 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.Accessor;
-import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.util.AbstractCloseable;
@@ -9,6 +8,7 @@ import com.devexed.dalwit.util.AbstractCloseable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * A cursor over a JDBC result set.
@@ -16,14 +16,11 @@ import java.sql.SQLException;
 final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
     private final ResultSet resultSet;
-    private final TypeFunction typeOfFunction;
-    private final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
+    private final Map<String, Getter<?>> columns;
 
-    ResultSetCursor(ResultSet resultSet, TypeFunction typeOfFunction,
-                    AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory) {
-        this.typeOfFunction = typeOfFunction;
-        this.accessorFactory = accessorFactory;
+    ResultSetCursor(ResultSet resultSet, Map<String, Getter<?>> columns) {
         this.resultSet = resultSet;
+        this.columns = columns;
     }
 
     @Override
@@ -61,20 +58,8 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T get(String column) {
-        checkNotClosed();
-
-        try {
-            Class<?> type = typeOfFunction.typeOf(column);
-            if (type == null) throw new DatabaseException("No such column " + column);
-
-            Accessor<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessor = accessorFactory.create(type);
-            int index = resultSet.findColumn(column) - 1;
-
-            return (T) accessor.get(resultSet, index);
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
+    public <T> Getter<T> getter(String column) {
+        return (Getter<T>) columns.get(column.toLowerCase());
     }
 
     @Override
@@ -88,12 +73,26 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
         super.close();
     }
 
-    /**
-     * Interface providing method of getting the accessor of a column with a specific name.
-     */
-    public interface TypeFunction {
+    static final class ResultSetGetter implements Cursor.Getter {
 
-        Class<?> typeOf(String column);
+        private final Accessor<PreparedStatement, ResultSet, SQLException> accessor;
+        private final ResultSet resultSet;
+        private final int index;
+
+        ResultSetGetter(Accessor<PreparedStatement, ResultSet, SQLException> accessor, ResultSet resultSet, int index) {
+            this.accessor = accessor;
+            this.resultSet = resultSet;
+            this.index = index;
+        }
+
+        @Override
+        public Object get() {
+            try {
+                return accessor.get(resultSet, index);
+            } catch (SQLException e) {
+                throw new DatabaseException(e);
+            }
+        }
 
     }
 }

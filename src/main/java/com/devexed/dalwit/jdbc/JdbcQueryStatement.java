@@ -5,15 +5,19 @@ import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.Query;
 import com.devexed.dalwit.QueryStatement;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
 
-    public JdbcQueryStatement(JdbcAbstractDatabase database, Query query) {
+    JdbcQueryStatement(JdbcAbstractDatabase database, Query query) {
         super(database, query);
 
         try {
-            setStatement(database.connection.prepareStatement(query.create(database, parameterIndexes, indexParameters)));
+            assignStatement(database.connection.prepareStatement(query.createSql()));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
@@ -25,14 +29,17 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
         database.checkActive();
 
         try {
-            return new ResultSetCursor(statement.executeQuery(), new ResultSetCursor.TypeFunction() {
+            Map<String, Cursor.Getter<?>> columns = new HashMap<>();
+            ResultSet resultSet = statement.executeQuery();
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
-                @Override
-                public Class<?> typeOf(String column) {
-                    return query.typeOf(column);
-                }
+            for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
+                String column = resultSetMetaData.getColumnName(i + 1);
+                Class<?> columnType = query.typeOf(column);
+                columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(database.accessorFactory.create(columnType), resultSet, i));
+            }
 
-            }, this.database.accessorFactory);
+            return new ResultSetCursor(resultSet, columns);
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

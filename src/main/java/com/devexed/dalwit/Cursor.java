@@ -25,16 +25,6 @@ package com.devexed.dalwit;
 public interface Cursor extends Closeable {
 
     /**
-     * Get the value of a column on the current row.
-     *
-     * @param column The name of the column.
-     * @param <T>    The class of the column data.
-     * @return The value of the column at the current row.
-     * @throws DatabaseException If the cursor is closed or the column doesn't exist.
-     */
-    <T> T get(String column);
-
-    /**
      * Seek relative to the current position in the cursor. A seek beyond the bounds of the cursor will return false and
      * close the cursor.
      *
@@ -57,5 +47,17 @@ public interface Cursor extends Closeable {
      * @see #seek
      */
     boolean next();
+
+    <T> Getter<T> getter(String column);
+
+    default <T> T get(String column) {
+        return this.<T>getter(column).get();
+    }
+
+    interface Getter<T> {
+
+        T get();
+
+    }
 
 }

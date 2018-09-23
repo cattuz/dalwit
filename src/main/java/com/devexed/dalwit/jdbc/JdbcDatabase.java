@@ -10,8 +10,8 @@ import java.util.Map;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
-    public JdbcDatabase(Connection connection,
-                 AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+    JdbcDatabase(Connection connection,
+                 AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                  JdbcGeneratedKeysSelector generatedKeysSelector) {
         super(connection, accessorFactory, generatedKeysSelector);
     }
