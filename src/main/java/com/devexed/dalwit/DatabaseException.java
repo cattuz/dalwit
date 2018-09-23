@@ -1,7 +1,8 @@
 package com.devexed.dalwit;
 
 /**
- * An exception which occurs when the database access fails.
+ * An exception which occurs when database access fails for any reason. Wraps underlying exception types thrown by the
+ * database implementation.
  */
 public final class DatabaseException extends RuntimeException {
 

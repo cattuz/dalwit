@@ -5,7 +5,7 @@ import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.Transaction;
 
 /**
- * FIXME Document!
+ * Cursor which closes and commits a parent closable when it itself is closed.
  */
 public class CommittingCursor extends ClosingCursor {
 

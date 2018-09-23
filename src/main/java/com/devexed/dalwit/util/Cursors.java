@@ -34,21 +34,21 @@ public final class Cursors {
         private final Object value;
         private boolean first = false;
 
-        @SuppressWarnings("unchecked")
+        SingletonCursor(String key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
+
         @Override
-        public <T> T get(String column) {
+        @SuppressWarnings("unchecked")
+        public <T> Getter<T> getter(String column) {
             checkNotClosed();
 
             if (!first) throw new DatabaseException("Cursor points before first row");
 
             if (!column.equals(key)) throw new DatabaseException("Column name must be " + key);
 
-            return (T) value;
-        }
-
-        public SingletonCursor(String key, Object value) {
-            this.key = key;
-            this.value = value;
+            return () -> (T) value;
         }
 
         @Override
@@ -101,7 +101,7 @@ public final class Cursors {
         }
 
         @Override
-        public <T> T get(String column) {
+        public <T> Getter<T> getter(String column) {
             checkNotClosed();
             throw new DatabaseException("Illegal cursor position");
         }

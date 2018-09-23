@@ -1,6 +1,6 @@
 package com.devexed.dalwit;
 
-public interface ReadonlyDatabase extends Driver, Closeable {
+public interface ReadonlyDatabase extends Closeable {
 
     /**
      * Prepares a query into a statement that reads from the database. IN SQL databases this is typically a SELECT

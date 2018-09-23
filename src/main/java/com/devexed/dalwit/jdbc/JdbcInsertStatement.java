@@ -13,13 +13,12 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
 
     private final LinkedHashMap<String, Class<?>> keys;
 
-    public JdbcInsertStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
+    JdbcInsertStatement(JdbcAbstractDatabase database, Query query, Map<String, Class<?>> keys) {
         super(database, query);
 
         try {
-            this.keys = new LinkedHashMap<String, Class<?>>(keys);
-            setStatement(database.generatedKeysSelector.prepareInsertStatement(database.connection,
-                    query.create(database, parameterIndexes, indexParameters), keys));
+            this.keys = new LinkedHashMap<>(keys);
+            assignStatement(database.generatedKeysSelector.prepareInsertStatement(database.connection, query.createSql(), keys));
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }
@@ -32,8 +31,7 @@ final class JdbcInsertStatement extends JdbcStatement implements InsertStatement
 
         try {
             statement.executeUpdate();
-            return database.generatedKeysSelector.selectGeneratedKeys(database.connection, statement,
-                    database.accessorFactory, keys);
+            return database.generatedKeysSelector.selectGeneratedKeys(database.connection, statement, database.accessorFactory, keys);
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

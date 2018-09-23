@@ -1,65 +1,36 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.*;
+import com.devexed.dalwit.Accessor;
+import com.devexed.dalwit.DatabaseException;
+import com.devexed.dalwit.Query;
+import com.devexed.dalwit.Statement;
 import com.devexed.dalwit.util.AbstractCloseable;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
 
 abstract class JdbcStatement extends AbstractCloseable implements Statement {
 
-    final JdbcAbstractDatabase database;
     final Query query;
-    final HashMap<String, List<Integer>> parameterIndexes;
-    final HashMap<Integer, String> indexParameters;
+    final JdbcAbstractDatabase database;
     PreparedStatement statement;
 
     JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this.database = database;
         this.query = query;
-        parameterIndexes = new HashMap<String, List<Integer>>();
-        indexParameters = new HashMap<Integer, String>();
     }
 
-    final void setStatement(PreparedStatement statement) {
+    final void assignStatement(PreparedStatement statement) {
         this.statement = statement;
     }
 
-    void checkActiveDatabase(ReadonlyDatabase database) {
-        if (!(database instanceof JdbcAbstractDatabase))
-            throw new DatabaseException("Expecting JDBC database");
-
-        ((JdbcAbstractDatabase) database).checkActive();
-    }
-
     @Override
-    public void clear() {
-        try {
-            statement.clearParameters();
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
-    }
-
-    @Override
-    public <T> void bind(String parameter, T value) {
+    public <T> Binder<T> binder(String parameter) {
         checkNotClosed();
+        Class<?> parameterType = query.typeOf(parameter);
+        int[] parameterIndices = query.indicesOf(parameter);
 
-        try {
-            Class<?> type = query.typeOf(parameter);
-            if (type == null) throw new DatabaseException("No such parameter " + parameter);
-
-            List<Integer> indexes = parameterIndexes.get(parameter);
-            if (indexes == null) throw new DatabaseException("No mapping for parameter " + parameter);
-
-            Accessor<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessor = database.accessorFactory.create(type);
-            for (int index : indexes) accessor.set(statement, index, value);
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
+        return new JdbcBinder<>(statement, database.accessorFactory.create(parameterType), parameterIndices);
     }
 
     @Override
@@ -80,6 +51,29 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
         }
 
         super.close();
+    }
+
+    private final class JdbcBinder<T> implements Binder<T> {
+
+        private final PreparedStatement statement;
+        private final Accessor<PreparedStatement, ?, SQLException> accessor;
+        private final int[] indices;
+
+        private JdbcBinder(PreparedStatement statement, Accessor<PreparedStatement, ?, SQLException> accessor, int[] indices) {
+            this.statement = statement;
+            this.accessor = accessor;
+            this.indices = indices;
+        }
+
+        @Override
+        public void bind(T value) {
+            try {
+                for (int index : indices) accessor.set(statement, index, value);
+            } catch (SQLException e) {
+                throw new DatabaseException(e);
+            }
+        }
+
     }
 
 }

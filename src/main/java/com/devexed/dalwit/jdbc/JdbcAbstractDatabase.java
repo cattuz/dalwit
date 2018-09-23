@@ -10,7 +10,7 @@ import java.sql.SQLException;
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
     final java.sql.Connection connection;
-    final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
+    final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
 
     private String type = null;
@@ -18,7 +18,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     private JdbcTransaction child = null;
 
     JdbcAbstractDatabase(java.sql.Connection connection,
-                         AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                         AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector) {
         this.connection = connection;
         this.accessorFactory = accessorFactory;
@@ -46,7 +46,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     /**
      * Check if this transaction has an open child transaction.
      */
-    final boolean hasChildTransaction() {
+    private boolean hasChildTransaction() {
         return child != null;
     }
 
@@ -80,36 +80,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     }
 
     @Override
-    public String getType() {
-        checkNotClosed();
-
-        if (type == null) {
-            try {
-                type = connection.getMetaData().getDatabaseProductName();
-            } catch (SQLException e) {
-                throw new DatabaseException(e);
-            }
-        }
-
-        return type;
-    }
-
-    @Override
-    public String getVersion() {
-        checkNotClosed();
-
-        if (version == null) {
-            try {
-                return connection.getMetaData().getDatabaseProductVersion();
-            } catch (SQLException e) {
-                throw new DatabaseException(e);
-            }
-        }
-
-        return version;
-    }
-
-    @Override
     public QueryStatement createQuery(Query query) {
         checkActive();
         return new JdbcQueryStatement(this, query);
@@ -125,10 +95,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
             url = ":unavailable:";
         }
 
-        return "[" + JdbcDatabase.class.getSimpleName() + "; " +
-                "type=" + getType() + "; " +
-                "version=" + getVersion() + "; " +
-                "url=" + url + "]";
+        return "[" + JdbcDatabase.class.getSimpleName() + "; url=" + url + "]";
     }
 
 }

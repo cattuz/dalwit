@@ -4,7 +4,7 @@ import com.devexed.dalwit.Closeable;
 import com.devexed.dalwit.Cursor;
 
 /**
- * FIXME Document!
+ * Cursor which closes a paren closable when it itself is closed.
  */
 public class ClosingCursor implements Cursor {
 
@@ -17,8 +17,8 @@ public class ClosingCursor implements Cursor {
     }
 
     @Override
-    public <T> T get(String column) {
-        return cursor.get(column);
+    public <T> Getter<T> getter(String column) {
+        return cursor.getter(column);
     }
 
     @Override

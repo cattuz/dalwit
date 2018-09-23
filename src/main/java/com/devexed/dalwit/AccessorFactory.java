@@ -7,20 +7,18 @@ package com.devexed.dalwit;
  *
  *
  * @param <S>  The settable type.
- * @param <SK> The settable key type.
  * @param <G>  The gettable type.
- * @param <GK> The gettable key type.
  * @param <E>  The exception thrown.
  *
  * @see Accessor
  */
-public interface AccessorFactory<S, SK, G, GK, E extends Exception> {
+public interface AccessorFactory<S, G, E extends Exception> {
 
     /**
      * Create an accessor for a specific type, or return null if no accessor is available for the specified type.
      * @param type The type for which to create the accessor.
      * @return The created accessor or null if no accessor could be created.
      */
-    Accessor<S, SK, G, GK, E> create(Class<?> type);
+    Accessor<S, G, E> create(Class<?> type);
 
 }

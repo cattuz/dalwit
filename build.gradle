@@ -1,10 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 
-// Enforce 1.6 to maintain maximum compatibility.
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
-
 group 'com.devexed.dalwit'
 version '0.4'
 
@@ -15,7 +11,7 @@ repositories {
 dependencies {
     testCompile 'junit:junit:4.11'
     testCompile 'org.xerial:sqlite-jdbc:3.16.1'
-    testCompile 'com.h2database:h2:1.4.193';
+    testCompile 'com.h2database:h2:1.4.193'
 }
 
 configurations {

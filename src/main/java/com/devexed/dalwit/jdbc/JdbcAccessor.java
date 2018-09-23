@@ -9,4 +9,4 @@ import java.sql.SQLException;
 /**
  * Accessor to bind values to and retrieve values from JDBC interfaces.
  */
-public interface JdbcAccessor extends Accessor<PreparedStatement, Integer, ResultSet, Integer, SQLException> {}
+interface JdbcAccessor extends Accessor<PreparedStatement, ResultSet, SQLException> {}

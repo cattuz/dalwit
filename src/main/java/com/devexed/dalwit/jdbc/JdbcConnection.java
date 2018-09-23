@@ -16,7 +16,7 @@ public final class JdbcConnection implements Connection {
     private final String driverClass;
     private final String url;
     private final Properties properties;
-    private final AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory;
+    private final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     private final JdbcGeneratedKeysSelector generatedKeysSelector;
 
     /**
@@ -30,7 +30,7 @@ public final class JdbcConnection implements Connection {
      * @param generatedKeysSelector The selector of generated keys after inserts.
      */
     public JdbcConnection(String driverClass, String url, Properties properties,
-                          AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                          AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                           JdbcGeneratedKeysSelector generatedKeysSelector) {
         this.driverClass = driverClass;
         this.url = url;
@@ -44,7 +44,7 @@ public final class JdbcConnection implements Connection {
      *
      * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector)
      */
-    public JdbcConnection(String driverClass, String url, Properties properties) {
+    private JdbcConnection(String driverClass, String url, Properties properties) {
         this(driverClass, url, properties, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
     }
 

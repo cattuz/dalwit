@@ -38,7 +38,7 @@ public interface JdbcGeneratedKeysSelector {
      * @throws SQLException If the generated keys could not be queried for any reason.
      */
     Cursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
-                               AccessorFactory<PreparedStatement, Integer, ResultSet, Integer, SQLException> accessorFactory,
+                               AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                                Map<String, Class<?>> keys) throws SQLException;
 
 }
