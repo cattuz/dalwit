@@ -111,7 +111,7 @@ public final class Statements {
      * </code></pre>
      *
      * @param values            The iterable collection of values.
-     * @param parameterPrefix   The prefix of the parameters in the list expresssion.
+     * @param parameterPrefix   The prefix of the parameters in the list expression.
      * @param parametersBuilder The parameters builder which will contain the mapping of parameters to values.
      * @param stringBuilder     The builder of the string which will contain the joined list of parameters.
      */

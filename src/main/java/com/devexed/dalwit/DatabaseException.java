@@ -14,8 +14,4 @@ public final class DatabaseException extends RuntimeException {
         super(e);
     }
 
-    public DatabaseException(String s, Throwable e) {
-        super(s, e);
-    }
-
 }

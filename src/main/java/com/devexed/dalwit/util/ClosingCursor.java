@@ -22,6 +22,11 @@ public class ClosingCursor implements Cursor {
     }
 
     @Override
+    public <T> T get(String column) {
+        return this.<T>getter(column).get();
+    }
+
+    @Override
     public boolean seek(int rows) {
         return cursor.seek(rows);
     }

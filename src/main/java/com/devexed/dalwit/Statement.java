@@ -7,9 +7,7 @@ public interface Statement extends Closeable {
 
     <T> Binder<T> binder(String parameter);
 
-    default <T> void bind(String parameter, T value) {
-        this.<T>binder(parameter).bind(value);
-    }
+    <T> void bind(String parameter, T value);
 
     interface Binder<T> {
 

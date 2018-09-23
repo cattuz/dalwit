@@ -63,6 +63,11 @@ final class ResultSetCursor extends AbstractCloseable implements Cursor {
     }
 
     @Override
+    public <T> T get(String column) {
+        return this.<T>getter(column).get();
+    }
+
+    @Override
     public void close() {
         try {
             resultSet.close();

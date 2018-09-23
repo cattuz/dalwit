@@ -4,8 +4,6 @@ import junit.framework.TestCase;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -126,10 +124,9 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testTransactionRollsBack() {
-        Map<String, Class<?>> columnTypes = Collections.singletonMap("a", String.class);
         Query createTable = Query.of("CREATE TABLE t2 (a TEXT NOT NULL)");
-        Query insertQuery = Query.of("INSERT INTO t2 (a) VALUES (:a)", columnTypes);
-        Query selectQuery = Query.of("SELECT a FROM t2", columnTypes);
+        Query insertQuery = Query.builder("INSERT INTO t2 (a) VALUES (:a)").declare("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t2").declare("a", String.class).build();
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
@@ -154,10 +151,9 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testNestedTransactionsCommit() {
-        Map<String, Class<?>> columnTypes = Collections.singletonMap("a", String.class);
         Query createTable = Query.of("CREATE TABLE t3 (a VARCHAR(50) NULL)");
-        Query insertQuery = Query.of("INSERT INTO t3 (a) VALUES (:a)", columnTypes);
-        Query selectQuery = Query.of("SELECT a FROM t3", columnTypes);
+        Query insertQuery = Query.builder("INSERT INTO t3 (a) VALUES (:a)").declare("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t3").declare("a", String.class).build();
 
         // Start parent transaction.
         Transaction transaction = db.transact();
@@ -245,10 +241,9 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testDeepNestedTransactionsRollback() {
-        Map<String, Class<?>> columnTypes = Collections.singletonMap("a", String.class);
         Query createTable = Query.of("CREATE TABLE t6 (a VARCHAR(50) NULL)");
-        Query insertQuery = Query.of("INSERT INTO t6 (a) VALUES (:a)", columnTypes);
-        Query selectQuery = Query.of("SELECT a FROM t6", columnTypes);
+        Query insertQuery = Query.builder("INSERT INTO t6 (a) VALUES (:a)").declare("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t6").declare("a", String.class).build();
 
         int transactionDepth = 15;
         ArrayList<Transaction> transactions = new ArrayList<>(transactionDepth);

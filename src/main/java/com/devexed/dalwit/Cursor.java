@@ -50,9 +50,7 @@ public interface Cursor extends Closeable {
 
     <T> Getter<T> getter(String column);
 
-    default <T> T get(String column) {
-        return this.<T>getter(column).get();
-    }
+    <T> T get(String column);
 
     interface Getter<T> {
 

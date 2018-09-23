@@ -13,8 +13,6 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
 
-    private String type = null;
-    private String version = null;
     private JdbcTransaction child = null;
 
     JdbcAbstractDatabase(java.sql.Connection connection,

@@ -166,12 +166,7 @@ public final class Query {
 
                 // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
                 String parameter = parameterBuilder.toString();
-                List<Integer> indexes = parameterIndexes.get(parameter);
-
-                if (indexes == null) {
-                    indexes = new ArrayList<>();
-                    parameterIndexes.put(parameter, indexes);
-                }
+                List<Integer> indexes = parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>());
 
                 indexes.add(parameterIndex);
                 parameterIndex++;
@@ -214,6 +209,11 @@ public final class Query {
 
         public Builder declare(String name, Class<?> type) {
             types.put(name, type);
+            return this;
+        }
+
+        public Builder declareAll(Map<String, Class<?>> types) {
+            this.types.putAll(types);
             return this;
         }
 

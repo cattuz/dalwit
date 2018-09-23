@@ -34,6 +34,11 @@ abstract class JdbcStatement extends AbstractCloseable implements Statement {
     }
 
     @Override
+    public <T> void bind(String parameter, T value) {
+        this.<T>binder(parameter).bind(value);
+    }
+
+    @Override
     protected final boolean isClosed() {
         try {
             return super.isClosed() || statement.isClosed();

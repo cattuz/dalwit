@@ -49,15 +49,6 @@ public final class JdbcConnection implements Connection {
     }
 
     /**
-     * Creates a default JDBC connection, with the default properties, accessor factory, and generated key selector.
-     *
-     * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector)
-     */
-    public JdbcConnection(String driverClass, String url) {
-        this(driverClass, url, new Properties());
-    }
-
-    /**
      * Open a {@link JdbcDatabase}.
      * @param readonly The readonly flag of the JDBC connection.
      * @return The opened database.

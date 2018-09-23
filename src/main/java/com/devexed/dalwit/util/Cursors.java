@@ -52,6 +52,11 @@ public final class Cursors {
         }
 
         @Override
+        public <T> T get(String column) {
+            return this.<T>getter(column).get();
+        }
+
+        @Override
         public boolean seek(int rows) {
             checkNotClosed();
 
@@ -104,6 +109,11 @@ public final class Cursors {
         public <T> Getter<T> getter(String column) {
             checkNotClosed();
             throw new DatabaseException("Illegal cursor position");
+        }
+
+        @Override
+        public <T> T get(String column) {
+            return this.<T>getter(column).get();
         }
 
     }
