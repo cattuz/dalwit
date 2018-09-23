@@ -1,10 +1,17 @@
 # Dalwit
 
-**Dalwit** is a <b>D</b>atabase <b>A</b>bstraction <b>L</b>ayer <b>w</b>ith <b>I</b>ntegrated <b>T</b>ransactions. Specifically it is an abstraction for communication with SQL databases in Java. Dalwit came about while examining ways of sharing database logic between Android applications and desktop Java applications. Failing to muster up any passion for implementing the quite massive JDBC interface for Android, I set upon creating a more minimal database abstraction. The Android implementation of Dalwit can be found at [dalwit-android](//github.com/cattuz/dalwit-android). The main features distinguishing Dalwit from JDBC are:
+**Dalwit** is a <b>D</b>atabase <b>A</b>bstraction <b>L</b>ayer <b>w</b>ith <b>I</b>ntegrated <b>T</b>ransactions.
+Specifically it is an abstraction for communication with SQL databases in Java, designed to be more minimal and
+single-minded than JDBC. The main features distinguishing Dalwit from JDBC are:
 
- * *First class transactions.* Where in JDBC using transactions means disabling auto commit and creating, committing and releasing savepoints, in Dalwit [transactions](#transactions) and nesting of transactions are part of the core interface.
- * *Named and typed columns and query parameters.* Query parameters are accessed by name and have a defined Java class. No more coercing and converting parameters at binding and retrieval time, and being unsure whether to use `getTimestamp`, `getLong`, or even `getString` for that DATETIME column.
- * *No unexceptional exceptions.* Meaning no checked exceptions that require boiler plate or wrapping to handle. Dalwit follows the philosophy that exceptions are not the rule, but the exception.
+ * *First class transactions.* Where in JDBC using transactions means disabling auto commit and creating, committing
+ and releasing save points, in Dalwit [transactions](#transactions) and nesting of transactions are part of the core
+ interface.
+ * *Named and typed columns and query parameters.* Query parameters are accessed by name and have a defined Java class.
+ No more coercing and converting parameters at binding and retrieval time, and being unsure whether to use
+ `getTimestamp`, `getLong`, or even `getString` for that DATETIME column.
+ * *No unexceptional exceptions.* Meaning no checked exceptions that require boiler plate or wrapping to handle.
+ Dalwit follows the philosophy that exceptions are not the rule, but the exception.
 
 ## Examples
 
@@ -21,14 +28,18 @@ try {
 }
 ```
 
-In Dalwit you create a connection which can open `Database` objects which correspond to a JDBC `java.sql.Connection` object. A Dalwit `Connection` is an inert object which contains the configuration to open databases, in writable or readonly mode. 
+In Dalwit you create a connection which can open `Database` objects which correspond to a JDBC `java.sql.Connection`
+object. A Dalwit `Connection` is an inert object which contains the configuration to open databases, in writable or
+readonly mode.
 
 ```java
 Connection connection = new JdbcConnection("org.h2.Driver", "jdbc:h2:./test.db");
 Database database = connection.write();
 ```
 
-However, since many JDBC implementations lack support for all getters and setters as well as full `PreparedStatement.getGeneratedKeys()` support, `JdbcConnection` allows you to define how you want your objects accessed and your generated keys provided.
+However, since many JDBC implementations lack support for all getters and setters as well as full
+`PreparedStatement.getGeneratedKeys()` support, `JdbcConnection` allows you to define how you want your objects accessed
+and your generated keys provided.
 
 ```java
 Connection connection = new JdbcConnection(
@@ -48,42 +59,33 @@ Connection connection = new JdbcConnection(
 ### Querying 
 
 ```java
-Query countQuery = Query.of("SELECT count(*) AS c FROM t", Collections.singletonMap("c", Long.TYPE));
+Query countQuery = Query
+        .builder("SELECT count(*) AS c FROM t")
+        .declare("a", Integer.TYPE)
+        .build();
 
-// The long form...
 try (ReadonlyDatabase database = connection.read();
      QueryStatement statement = database.createQuery(countQuery);
      Cursor cursor = statement.query(database)) {
-    System.out.println(cursor.get("c"));
-}
-
-// ... or using utilities for parameterless queries...
-try (ReadonlyDatabase database = connection.read()) {
-    Cursor cursor = Statements.query(database, countQuery);
     System.out.println(cursor.get("c"));
 }
 ```
 
 ### <a name="transactions">Transactions</a>
 
-Updating the database occurs within transactions which are explicitly committed or rolled back:
+Transactions which are explicitly committed or otherwise automatically rolled back:
 
 ```java
-Query insertQuery = Query.of("INSERT INTO t (a) VALUES (:a)", Collections.singletonMap("a", String.class));
+Query insertQuery = Query
+        .builder("INSERT INTO t (a) VALUES (:a)")
+        .declare("a", Integer.TYPE)
+        .build();
 
-// The long form...
 try (Database database = connection.write();
      Transaction transaction = database.transact();
      UpdateStatement statement = database.createUpdate(insertQuery)) {
     statement.bind("a", "Text 123");
     System.out.println("Success! Inserted " + statement.update() + " rows");
     transaction.commit();
-}
-
-// ... or using utilities for single statement transaction...
-try (Database database = connection.write();
-     UpdateStatement statement = database.createUpdate(insertQuery)) {
-    statement.bind("a", "Text 123");
-    System.out.println("Success! Inserted " + Statements.update(db, statement) + " rows");
 }
 ```
