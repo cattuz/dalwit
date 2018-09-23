@@ -1,5 +1,6 @@
 package com.devexed.dalwit;
 
+import com.devexed.dalwit.util.Statements;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
@@ -241,7 +242,7 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testDeepNestedTransactionsRollback() {
-        Query createTable = Query.of("CREATE TABLE t6 (a VARCHAR(50) NULL)");
+        Statements.execute(db, Query.of("CREATE TABLE t6 (a VARCHAR(50) NULL)"));
         Query insertQuery = Query.builder("INSERT INTO t6 (a) VALUES (:a)").declare("a", String.class).build();
         Query selectQuery = Query.builder("SELECT a FROM t6").declare("a", String.class).build();
 
@@ -249,7 +250,6 @@ public abstract class DatabaseTestCase extends TestCase {
         ArrayList<Transaction> transactions = new ArrayList<>(transactionDepth);
         Transaction transaction = db.transact();
         transactions.add(transaction);
-        transaction.createExecution(createTable).execute();
 
         for (int i = 0; i < transactionDepth - 1; i++) {
             transaction = transaction.transact();
@@ -275,6 +275,48 @@ public abstract class DatabaseTestCase extends TestCase {
         QueryStatement queryStatement = db.createQuery(selectQuery);
         Cursor cursor = queryStatement.query();
         assertFalse(cursor.next());
+    }
+
+    public void testBinderAndGetter() {
+        int count = 1000;
+        Statements.execute(db, Query.of("CREATE TABLE t7 (a INTEGER)"));
+
+        // Insert multiple values with the same binder
+        Query insertQuery = Query
+                .builder("INSERT INTO t7 (a) VALUES (:a)")
+                .declare("a", Integer.TYPE)
+                .build();
+
+        try (Transaction transaction = db.transact();
+             ExecutionStatement statement = transaction.createExecution(insertQuery)) {
+            Statement.Binder<Integer> binder = statement.binder("a");
+
+            for (int i = 0; i < count; i++) {
+                binder.bind(i);
+                statement.execute();
+            }
+
+            transaction.commit();
+        }
+
+        // Verify the values with same getter
+        Query selectQuery = Query
+                .builder("SELECT a FROM t7 ORDER BY a")
+                .declare("a", Integer.class)
+                .build();
+
+        try (QueryStatement statement = db.createQuery(selectQuery);
+             Cursor cursor = statement.query()) {
+            Cursor.Getter<Integer> getter = cursor.getter("a");
+            int i = 0;
+
+            while (cursor.next()) {
+                assertEquals((int) getter.get(), i);
+                i++;
+            }
+
+            assertEquals(i, count);
+        }
     }
 
 }

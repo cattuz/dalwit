@@ -65,15 +65,14 @@ public final class Statements {
         }
     }
 
-    public static void execute(Database database, Query execution) {
-        execute(database, execution, Collections.emptyMap());
+    public static void execute(Database database, Query query) {
+        execute(database, query, Collections.emptyMap());
     }
 
-    public static void execute(Database database, Query execution, Map<String, ?> bindings) {
-        try (Transaction transaction = database.transact(); ExecutionStatement statement = transaction.createExecution(execution)) {
+    public static void execute(Database database, Query query, Map<String, ?> bindings) {
+        try (ExecutionStatement statement = database.createExecution(query)) {
             bindAll(statement, bindings);
             statement.execute();
-            transaction.commit();
         }
     }
 
