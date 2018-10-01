@@ -1,7 +1,6 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.AccessorFactory;
-import com.devexed.dalwit.DatabaseException;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -295,10 +294,7 @@ public final class DefaultJdbcAccessorFactory
 
     @Override
     public JdbcAccessor create(Class<?> type) {
-        JdbcAccessor accessor = accessors.get(type);
-        if (accessor == null) throw new DatabaseException("No accessor is defined for " + type);
-
-        return accessor;
+        return accessors.get(type);
     }
 
 }

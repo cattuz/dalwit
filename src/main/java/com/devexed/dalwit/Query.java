@@ -1,36 +1,41 @@
 package com.devexed.dalwit;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class Query {
+
+    public static String parameterListIndexer(String parameter, int index) {
+        return parameter + '$' + index;
+    }
 
     public static Builder builder(String sql) {
         return new Builder(sql);
     }
 
     public static Query of(String sql, Map<String, Class<?>> types) {
-        return new Query(sql, types);
+        return new Query(sql, types, Collections.emptyMap());
     }
 
     public static Query of(String sql) {
-        return new Query(sql, new HashMap<>());
+        return new Query(sql, Collections.emptyMap(), Collections.emptyMap());
     }
 
     private final String rawSql;
     private final HashMap<String, Class<?>> types;
+    private final HashMap<String, Integer> lists;
     private final HashMap<String, int[]> parameterIndices;
 
-    private Query(String sql, Map<String, Class<?>> types) {
+    private Query(String sql, Map<String, Class<?>> types, Map<String, Integer> lists) {
         // Convert parameters and columns to lowercase so matching parameters and types is case insensitive
         this.types = new HashMap<>(types.size());
         for (Map.Entry<String, Class<?>> e : types.entrySet()) this.types.put(e.getKey().toLowerCase(), e.getValue());
 
+        this.lists = new HashMap<>(lists.size());
+        for (Map.Entry<String, Integer> e : lists.entrySet()) this.lists.put(e.getKey().toLowerCase(), e.getValue());
+
         // Parse sql for named parameters
         Map<String, List<Integer>> boxedParameterIndices = new HashMap<>();
-        rawSql = parseParameterQuery(sql, boxedParameterIndices);
+        rawSql = parseParameterQuery(sql, boxedParameterIndices, this.lists);
 
         // Un-box parsed parameter indices for better performance
         parameterIndices = new HashMap<>(boxedParameterIndices.size());
@@ -42,6 +47,16 @@ public final class Query {
             for (int i = 0; i < indices.length; i++) indices[i] = boxedIndices.get(i);
 
             parameterIndices.put(e.getKey(), indices);
+        }
+
+        // Ensure no parameters are left undefined
+        LinkedHashSet<String> missingTypes = new LinkedHashSet<>(parameterIndices.keySet());
+        missingTypes.removeAll(this.types.keySet());
+
+        if (!missingTypes.isEmpty()) {
+            throw new DatabaseException(String.format(
+                    "Parameter%s " + String.join(",", missingTypes) + " must have a type declaration for the query:\n" + sql,
+                    missingTypes.size() > 1 ? "s" : ""));
         }
     }
 
@@ -69,6 +84,62 @@ public final class Query {
         return type;
     }
 
+    public Integer listSizeOf(String name) {
+        return lists.get(name.toLowerCase());
+    }
+
+    public static final class Builder {
+
+        private final String sql;
+        private final HashMap<String, Class<?>> types;
+        private final HashMap<String, Integer> lists;
+
+        private Builder(String sql) {
+            this.sql = sql;
+            types = new HashMap<>();
+            lists = new HashMap<>();
+        }
+
+        public Builder declare(String name, Class<?> type) {
+            // Ensure parameters are not declared multiple times with different types
+            Class<?> t = types.get(name);
+
+            if (t != null && !t.equals(type)) {
+                throw new DatabaseException("Parameter " + name + " with type " + t + " was re-declared with different type " + type);
+            }
+
+            types.put(name, type);
+
+            return this;
+        }
+
+        public Builder declareAll(Map<String, Class<?>> types) {
+            for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+                declare(e.getKey(), e.getValue());
+            }
+
+            return this;
+        }
+
+        public Builder declare(String name, Class<?> type, int size) {
+            if (size <= 0) {
+                throw new DatabaseException("List parameter size must be one or greater");
+            }
+
+            lists.put(name, size);
+
+            for (int i = 0; i < size; i++) {
+                declare(parameterListIndexer(name, i), type);
+            }
+
+            return this;
+        }
+
+        public Query build() {
+            return new Query(sql, types, lists);
+        }
+
+    }
 
     /**
      * <p>Parse a query for named parameter named in the form of a colon (:) followed by
@@ -84,7 +155,7 @@ public final class Query {
      * @param parameterIndexes The map which to fill with parameter indexes.
      * @return The query with the named parameters replaced with ?.
      */
-    private static String parseParameterQuery(String query, Map<String, List<Integer>> parameterIndexes) {
+    private static String parseParameterQuery(String query, Map<String, List<Integer>> parameterIndexes, Map<String, Integer> listParameters) {
         StringBuilder queryBuilder = new StringBuilder();
         StringBuilder parameterBuilder = new StringBuilder();
         int parameterIndex = 0;
@@ -166,11 +237,29 @@ public final class Query {
 
                 // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
                 String parameter = parameterBuilder.toString();
-                List<Integer> indexes = parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>());
+                Integer listParameterSize = listParameters.get(parameter);
 
-                indexes.add(parameterIndex);
-                parameterIndex++;
-                queryBuilder.append('?');
+                if (listParameterSize != null) {
+                    queryBuilder.append('(');
+                    List<Integer> indexes = parameterIndexes.computeIfAbsent(parameterListIndexer(parameter, 0), k -> new ArrayList<>());
+                    indexes.add(parameterIndex);
+                    parameterIndex++;
+                    queryBuilder.append('?');
+
+                    for (int p = 1; p < listParameterSize; p++) {
+                        indexes = parameterIndexes.computeIfAbsent(parameterListIndexer(parameter, p), k -> new ArrayList<>());
+                        queryBuilder.append(",?");
+                        indexes.add(parameterIndex);
+                        parameterIndex++;
+                    }
+
+                    queryBuilder.append(')');
+                } else {
+                    List<Integer> indexes = parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>());
+                    indexes.add(parameterIndex);
+                    parameterIndex++;
+                    queryBuilder.append('?');
+                }
 
                 continue;
             }
@@ -195,32 +284,6 @@ public final class Query {
         EscapedRange(String startAndEnd) {
             this(startAndEnd, startAndEnd);
         }
-    }
-
-    public static final class Builder {
-
-        private final String sql;
-        private final HashMap<String, Class<?>> types;
-
-        private Builder(String sql) {
-            this.sql = sql;
-            types = new HashMap<>();
-        }
-
-        public Builder declare(String name, Class<?> type) {
-            types.put(name, type);
-            return this;
-        }
-
-        public Builder declareAll(Map<String, Class<?>> types) {
-            this.types.putAll(types);
-            return this;
-        }
-
-        public Query build() {
-            return new Query(sql, types);
-        }
-
     }
 
 }

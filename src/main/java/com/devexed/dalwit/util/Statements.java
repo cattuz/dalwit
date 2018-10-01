@@ -2,7 +2,6 @@ package com.devexed.dalwit.util;
 
 import com.devexed.dalwit.*;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -16,62 +15,18 @@ public final class Statements {
     }
 
     public static Cursor query(ReadonlyDatabase database, Query query) {
-        return query(database, query, Collections.emptyMap());
-    }
-
-    public static Cursor query(ReadonlyDatabase database, Query query, Map<String, ?> bindings) {
-        QueryStatement statement = null;
+        QueryStatement statement = database.createQuery(query);
 
         try {
-            statement = database.createQuery(query);
-            bindAll(statement, bindings);
             return new ClosingCursor(statement, statement.query());
-        } catch (RuntimeException e) {
-            if (statement != null) statement.close();
+        } catch (Exception e) {
+            statement.close();
             throw e;
-        }
-    }
-
-    public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys) {
-        return insert(database, insert, keys, Collections.emptyMap());
-    }
-
-    public static Cursor insert(Database database, Query insert, Map<String, Class<?>> keys, Map<String, ?> bindings) {
-        Transaction transaction = null;
-        InsertStatement statement = null;
-
-        try {
-            transaction = database.transact();
-            statement = transaction.createInsert(insert, keys);
-            bindAll(statement, bindings);
-            return new CommittingCursor(transaction, statement, statement.insert());
-        } catch (RuntimeException e) {
-            if (statement != null) statement.close();
-            if (transaction != null) transaction.close();
-            throw e;
-        }
-    }
-
-    public static long update(Database database, Query update) {
-        return update(database, update, Collections.emptyMap());
-    }
-
-    public static long update(Database database, Query update, Map<String, ?> bindings) {
-        try (Transaction transaction = database.transact(); UpdateStatement statement = transaction.createUpdate(update)) {
-            bindAll(statement, bindings);
-            long count = statement.update();
-            transaction.commit();
-            return count;
         }
     }
 
     public static void execute(Database database, Query query) {
-        execute(database, query, Collections.emptyMap());
-    }
-
-    public static void execute(Database database, Query query, Map<String, ?> bindings) {
         try (ExecutionStatement statement = database.createExecution(query)) {
-            bindAll(statement, bindings);
             statement.execute();
         }
     }
@@ -91,7 +46,6 @@ public final class Statements {
      * <p>Build an list expression from any iterable collection of values. Given a collection of values this function
      * will build a string of a list of comma separated parameters and collects those bound parameters in a map that can
      * be bound to a statement (e.g. using the {@link #bindAll} function.</p>
-     * <p/>
      * <p>For example, after...</p>
      * <pre><code>
      * Map&lt;String, Integer&gt; mappedItems = new HashMap&lt;&gt;();

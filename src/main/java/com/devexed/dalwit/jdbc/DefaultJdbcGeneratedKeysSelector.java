@@ -1,5 +1,6 @@
 package com.devexed.dalwit.jdbc;
 
+import com.devexed.dalwit.Accessor;
 import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
@@ -33,7 +34,13 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
 
             if (keyType == null) throw new DatabaseException("Missing type for generated key column " + column);
 
-            columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessorFactory.create(keyType), resultSet, i));
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(keyType);
+
+            if (accessor == null) {
+                throw new DatabaseException("No accessor is defined for type " + keyType + " (generated key column " + column + ")");
+            }
+
+            columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
         }
 
         return new ResultSetCursor(resultSet, columns);

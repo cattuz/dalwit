@@ -1,10 +1,8 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.Cursor;
-import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.Query;
-import com.devexed.dalwit.QueryStatement;
+import com.devexed.dalwit.*;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -36,7 +34,13 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
             for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
                 String column = resultSetMetaData.getColumnName(i + 1);
                 Class<?> columnType = query.typeOf(column);
-                columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(database.accessorFactory.create(columnType), resultSet, i));
+                Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
+
+                if (accessor == null) {
+                    throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + column + ")");
+                }
+
+                columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
             }
 
             return new ResultSetCursor(resultSet, columns);

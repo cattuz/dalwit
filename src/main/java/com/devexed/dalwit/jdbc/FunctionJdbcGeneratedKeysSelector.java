@@ -55,7 +55,10 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
             if (!resultSet.next()) return Cursors.empty();
 
             Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(lastGeneratedIdType);
-            if (accessor == null) throw new DatabaseException("No accessor is defined for " + lastGeneratedIdType);
+
+            if (accessor == null) {
+                throw new DatabaseException("No accessor is defined for type " + lastGeneratedIdType + " (generated key column " + keyColumn + ")");
+            }
 
             generatedKey = accessor.get(resultSet, 0);
         }
