@@ -421,4 +421,20 @@ public abstract class DatabaseTestCase extends TestCase {
         }
     }
 
+    public void testSnakeCaseColumn() {
+        // Insert all objects then select and make sure they are identical
+        Statements.execute(db, Query.of("CREATE TABLE t10 (a_a INTEGER)"));
+        Statements.execute(db, Query.of("INSERT INTO t10 (a_a) VALUES (1)"));
+
+        try (QueryStatement selectStatement = db.createQuery(Query
+                .builder("SELECT * FROM t10")
+                .declare("aA", Integer.TYPE)
+                .build())) {
+            try (Cursor cursor = selectStatement.query()) {
+                assertTrue(cursor.next());
+                assertEquals((int) cursor.get("aA"), 1);
+            }
+        }
+    }
+
 }

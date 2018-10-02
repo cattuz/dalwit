@@ -1,7 +1,6 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.Accessor;
-import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.util.Cursors;
@@ -43,18 +42,17 @@ public final class FunctionJdbcGeneratedKeysSelector implements JdbcGeneratedKey
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Connection connection,
+    public Cursor selectGeneratedKeys(JdbcAbstractDatabase database,
                                       PreparedStatement statement,
-                                      AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                                       Map<String, Class<?>> keys) throws SQLException {
         // Select last inserted id as key.
         final String keyColumn = keys.keySet().iterator().next();
         final Object generatedKey;
 
-        try (ResultSet resultSet = connection.createStatement().executeQuery("SELECT " + lastGeneratedIdFunction)) {
+        try (ResultSet resultSet = database.connection.createStatement().executeQuery("SELECT " + lastGeneratedIdFunction)) {
             if (!resultSet.next()) return Cursors.empty();
 
-            Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(lastGeneratedIdType);
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(lastGeneratedIdType);
 
             if (accessor == null) {
                 throw new DatabaseException("No accessor is defined for type " + lastGeneratedIdType + " (generated key column " + keyColumn + ")");

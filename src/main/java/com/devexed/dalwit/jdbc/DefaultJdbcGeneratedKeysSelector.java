@@ -1,7 +1,6 @@
 package com.devexed.dalwit.jdbc;
 
 import com.devexed.dalwit.Accessor;
-import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
 import com.devexed.dalwit.DatabaseException;
 
@@ -21,20 +20,19 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
     }
 
     @Override
-    public Cursor selectGeneratedKeys(Connection connection, PreparedStatement statement,
-                                      AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
+    public Cursor selectGeneratedKeys(JdbcAbstractDatabase database, PreparedStatement statement,
                                       Map<String, Class<?>> keyTypes) throws SQLException {
         Map<String, Cursor.Getter<?>> columns = new HashMap<>();
         ResultSet resultSet = statement.getGeneratedKeys();
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
         for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
-            String column = resultSetMetaData.getColumnName(i + 1);
+            String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1));
             Class<?> keyType = keyTypes.get(column);
 
             if (keyType == null) throw new DatabaseException("Missing type for generated key column " + column);
 
-            Accessor<PreparedStatement, ResultSet, SQLException> accessor = accessorFactory.create(keyType);
+            Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(keyType);
 
             if (accessor == null) {
                 throw new DatabaseException("No accessor is defined for type " + keyType + " (generated key column " + column + ")");

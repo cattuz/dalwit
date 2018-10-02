@@ -7,13 +7,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.function.Function;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
     public JdbcDatabase(Connection connection,
-                 AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
-                 JdbcGeneratedKeysSelector generatedKeysSelector) {
-        super(connection, accessorFactory, generatedKeysSelector);
+                        AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
+                        JdbcGeneratedKeysSelector generatedKeysSelector,
+                        Function<String, String> columnNameMapper) {
+        super(connection, accessorFactory, generatedKeysSelector, columnNameMapper);
     }
 
     @Override

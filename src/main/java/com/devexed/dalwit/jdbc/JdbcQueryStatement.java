@@ -32,7 +32,7 @@ final class JdbcQueryStatement extends JdbcStatement implements QueryStatement {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
-                String column = resultSetMetaData.getColumnName(i + 1);
+                String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1));
                 Class<?> columnType = query.typeOf(column);
                 Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
 

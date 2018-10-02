@@ -14,7 +14,7 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
      * Create a root level transaction. Committing this transaction will update the database.
      */
     JdbcTransaction(JdbcAbstractDatabase parent) {
-        super(parent.connection, parent.accessorFactory, parent.generatedKeysSelector);
+        super(parent.connection, parent.accessorFactory, parent.generatedKeysSelector, parent.columnNameMapper);
         this.parent = parent;
     }
 

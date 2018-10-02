@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.function.Function;
 
 /**
  * A connection to a JDBC database.
@@ -18,6 +19,7 @@ public final class JdbcConnection implements Connection {
     private final Properties properties;
     private final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     private final JdbcGeneratedKeysSelector generatedKeysSelector;
+    private final Function<String, String> columnNameMapper;
 
     /**
      * Creates a connection object which can open databases for reading or writing using a JDBC driver.
@@ -31,21 +33,23 @@ public final class JdbcConnection implements Connection {
      */
     public JdbcConnection(String driverClass, String url, Properties properties,
                           AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
-                          JdbcGeneratedKeysSelector generatedKeysSelector) {
+                          JdbcGeneratedKeysSelector generatedKeysSelector,
+                          Function<String, String> columnNameMapper) {
         this.driverClass = driverClass;
         this.url = url;
         this.properties = properties;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;
+        this.columnNameMapper = columnNameMapper;
     }
 
     /**
      * Creates a default JDBC connection, with the default accessor factory and generated key selector.
      *
-     * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector)
+     * @see #JdbcConnection(String, String, Properties, AccessorFactory, JdbcGeneratedKeysSelector, Function)
      */
-    private JdbcConnection(String driverClass, String url, Properties properties) {
-        this(driverClass, url, properties, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector());
+    public JdbcConnection(String driverClass, String url, Properties properties) {
+        this(driverClass, url, properties, new DefaultJdbcAccessorFactory(), new DefaultJdbcGeneratedKeysSelector(), new DefaultJdbcColumnNameMapper());
     }
 
     /**
@@ -69,7 +73,7 @@ public final class JdbcConnection implements Connection {
             throw new DatabaseException(e);
         }
 
-        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector);
+        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector, columnNameMapper);
     }
 
     /**
