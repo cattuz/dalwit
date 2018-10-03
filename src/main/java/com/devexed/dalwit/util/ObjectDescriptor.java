@@ -92,11 +92,11 @@ public final class ObjectDescriptor<T> {
         }
     }
 
-    public ObjectBinder<T> binder(Statement statement) {
-        return new ObjectBinder<>(statement, constructor, properties);
+    public ObjectBinder<T> binder(ReadonlyStatement statement) {
+        return new ObjectBinder<>(statement, properties);
     }
 
-    public void bindAll(ExecutionStatement statement, Iterable<T> objects) {
+    public void bindAll(Statement statement, Iterable<T> objects) {
         ObjectBinder<T> binder = binder(statement);
 
         for (T object : objects) {
@@ -105,7 +105,7 @@ public final class ObjectDescriptor<T> {
         }
     }
 
-    public <E> ArrayList<E> bindAll(InsertStatement statement, ObjectDescriptor<E> resultDescriptor, Iterable<T> objects) {
+    public <E> ArrayList<E> bindAll(Statement statement, ObjectDescriptor<E> resultDescriptor, Iterable<T> objects) {
         ArrayList<E> result = new ArrayList<>();
         ObjectBinder<T> binder = binder(statement);
 
@@ -128,12 +128,8 @@ public final class ObjectDescriptor<T> {
         return new ObjectIterable<>(cursor, getter(cursor));
     }
 
-    public Map<String, Class<?>> getTypes() {
+    public Map<String, Class<?>> types() {
         return types;
-    }
-
-    public Query sql(String sql) {
-        return Query.of(sql, getTypes());
     }
 
     interface Property {

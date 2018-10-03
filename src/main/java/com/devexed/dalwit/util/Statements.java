@@ -14,30 +14,45 @@ public final class Statements {
     private Statements() {
     }
 
+    /**
+     * Run an query statement. Use <code>query.on(database).execute()</code> instead
+     * @deprecated Use <code>query.on(database).query()</code> instead
+     * @param database The database on which to run the query
+     * @param query The query
+     * @return The query cursor
+     */
     public static Cursor query(ReadonlyDatabase database, Query query) {
-        QueryStatement statement = database.createQuery(query);
-
-        try {
-            return new ClosingCursor(statement, statement.query());
-        } catch (Exception e) {
-            statement.close();
-            throw e;
-        }
-    }
-
-    public static void execute(Database database, Query query) {
-        try (ExecutionStatement statement = database.createExecution(query)) {
-            statement.execute();
-        }
+        return query.on(database).query();
     }
 
     /**
-     * Bind all parameters in a map to a {@link Statement}.
+     * Run an execute statement. Use <code>query.on(database).execute()</code> instead
+     * @deprecated Use <code>query.on(database).execute()</code> instead
+     * @param database The database on which to run the query
+     * @param query The query
+     */
+    public static void execute(Database database, Query query) {
+        query.on(database).execute();
+    }
+
+    /**
+     * Run an update statement.
+     * @deprecated Use <code>query.on(database).update()</code> instead
+     * @param database The database on which to run the query
+     * @param query The query
+     * @return The update count
+     */
+    public static long update(Database database, Query query) {
+        return query.on(database).update();
+    }
+
+    /**
+     * Bind all parameters in a map to a {@link ReadonlyStatement}.
      *
      * @param statement  The statement to which to bind the parameter.
      * @param parameters A map of the parameters and their values.
      */
-    public static <E> void bindAll(Statement statement, Map<String, E> parameters) {
+    public static <E> void bindAll(ReadonlyStatement statement, Map<String, E> parameters) {
         for (Map.Entry<String, E> e : parameters.entrySet())
             statement.bind(e.getKey(), e.getValue());
     }

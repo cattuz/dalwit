@@ -11,7 +11,7 @@ public class ClosingCursor implements Cursor {
     private final Closeable parent;
     private final Cursor cursor;
 
-    ClosingCursor(Closeable parent, Cursor cursor) {
+    public ClosingCursor(Closeable parent, Cursor cursor) {
         this.parent = parent;
         this.cursor = cursor;
     }

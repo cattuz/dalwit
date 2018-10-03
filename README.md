@@ -61,13 +61,14 @@ Connection connection = new JdbcConnection(
 ```java
 Query countQuery = Query
         .builder("SELECT count(*) AS c FROM t")
-        .declare("a", Integer.TYPE)
+        .column("c", Integer.TYPE)
         .build();
 
 try (ReadonlyDatabase database = connection.read();
-     QueryStatement statement = database.createQuery(countQuery);
+     ReadonlyStatement statement = database.prepare(countQuery);
      Cursor cursor = statement.query(database)) {
-    System.out.println(cursor.get("c"));
+    String c = cursor.get("c");
+    System.out.println(c);
 }
 ```
 
@@ -78,14 +79,19 @@ Transactions which are explicitly committed or otherwise automatically rolled ba
 ```java
 Query insertQuery = Query
         .builder("INSERT INTO t (a) VALUES (:a)")
-        .declare("a", Integer.TYPE)
+        .parameter("a", String.class)
         .build();
 
 try (Database database = connection.write();
-     Transaction transaction = database.transact();
-     UpdateStatement statement = database.createUpdate(insertQuery)) {
+     Statement statement = database.prepare(insertQuery)) {
     statement.bind("a", "Text 123");
-    System.out.println("Success! Inserted " + statement.update() + " rows");
-    transaction.commit();
+    statement.execute();
 }
+
+// ... Or the short form for statements only executed once
+
+try (Database database = connection.write()) {
+    insertQuery.on(database).bind("a", "Text 123").execute();
+}
+
 ```

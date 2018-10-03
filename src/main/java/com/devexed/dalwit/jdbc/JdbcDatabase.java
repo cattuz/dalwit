@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.function.Function;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
@@ -27,21 +26,9 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
     }
 
     @Override
-    public UpdateStatement createUpdate(Query query) {
+    public Statement prepare(Query query) {
         checkActive();
-        return new JdbcUpdateStatement(this, query);
-    }
-
-    @Override
-    public ExecutionStatement createExecution(Query query) {
-        checkActive();
-        return new JdbcExecutionStatement(this, query);
-    }
-
-    @Override
-    public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
-        checkActive();
-        return new JdbcInsertStatement(this, query, keys);
+        return new JdbcStatement(this, query);
     }
 
     @Override

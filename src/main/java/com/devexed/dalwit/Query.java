@@ -1,44 +1,45 @@
 package com.devexed.dalwit;
 
+import com.devexed.dalwit.util.ClosingCursor;
+
 import java.util.*;
 
 public final class Query {
+
+    private static Map<String, Class<?>> emptyTypeMap = Collections.emptyMap();
+    private static Map<String, Integer> emptyListSizeMap = Collections.emptyMap();
 
     public static String parameterListIndexer(String parameter, int index) {
         return parameter + '$' + index;
     }
 
-    public static Builder builder(String sql) {
-        return new Builder(sql);
-    }
-
-    public static Query of(String sql, Map<String, Class<?>> types) {
-        return new Query(sql, types, Collections.emptyMap());
+    public static QueryBuilder builder(String sql) {
+        return new QueryBuilder(sql);
     }
 
     public static Query of(String sql) {
-        return new Query(sql, Collections.emptyMap(), Collections.emptyMap());
+        return new Query(sql, emptyTypeMap, emptyListSizeMap, emptyTypeMap, emptyTypeMap);
     }
 
     private final String rawSql;
-    private final HashMap<String, Class<?>> types;
-    private final HashMap<String, Integer> lists;
-    private final HashMap<String, int[]> parameterIndices;
+    private final Map<String, Class<?>> parameters;
+    private final Map<String, Integer> parameterListsSizes;
+    private final Map<String, Class<?>> columns;
+    private final Map<String, Class<?>> keys;
+    private final Map<String, int[]> parameterIndices;
 
-    private Query(String sql, Map<String, Class<?>> types, Map<String, Integer> lists) {
-        // Convert parameters and columns to lowercase so matching parameters and types is case insensitive
-        this.types = new HashMap<>(types.size());
-        for (Map.Entry<String, Class<?>> e : types.entrySet()) this.types.put(e.getKey().toLowerCase(), e.getValue());
-
-        this.lists = new HashMap<>(lists.size());
-        for (Map.Entry<String, Integer> e : lists.entrySet()) this.lists.put(e.getKey().toLowerCase(), e.getValue());
+    private Query(String sql, Map<String, Class<?>> parameters, Map<String, Integer> parameterListsSizes, Map<String, Class<?>> columns, Map<String, Class<?>> keys) {
+        this.parameters = parameters;
+        this.parameterListsSizes = parameterListsSizes;
+        this.columns = columns;
+        this.keys = keys;
 
         // Parse sql for named parameters
         Map<String, List<Integer>> boxedParameterIndices = new HashMap<>();
-        rawSql = parseParameterQuery(sql, boxedParameterIndices, this.lists);
+        rawSql = parseParameterQuery(sql, boxedParameterIndices, this.parameterListsSizes);
 
-        // Un-box parsed parameter indices for better performance
-        parameterIndices = new HashMap<>(boxedParameterIndices.size());
+        // Un-box parsed parameters indices for better performance
+        HashMap<String, int[]> mutableParameterIndices = new HashMap<>(boxedParameterIndices.size());
 
         for (Map.Entry<String, List<Integer>> e : boxedParameterIndices.entrySet()) {
             List<Integer> boxedIndices = e.getValue();
@@ -46,12 +47,14 @@ public final class Query {
 
             for (int i = 0; i < indices.length; i++) indices[i] = boxedIndices.get(i);
 
-            parameterIndices.put(e.getKey(), indices);
+            mutableParameterIndices.put(e.getKey(), indices);
         }
 
+        this.parameterIndices = Collections.unmodifiableMap(mutableParameterIndices);
+
         // Ensure no parameters are left undefined
-        LinkedHashSet<String> missingTypes = new LinkedHashSet<>(parameterIndices.keySet());
-        missingTypes.removeAll(this.types.keySet());
+        LinkedHashSet<String> missingTypes = new LinkedHashSet<>(mutableParameterIndices.keySet());
+        missingTypes.removeAll(this.parameters.keySet());
 
         if (!missingTypes.isEmpty()) {
             throw new DatabaseException(String.format(
@@ -60,99 +63,194 @@ public final class Query {
         }
     }
 
-    public String createSql() {
+    public String sql() {
         return rawSql;
     }
 
-    public int[] indicesOf(String parameter) {
-        int[] indices = parameterIndices.get(parameter.toLowerCase());
-
-        if (indices == null) {
-            throw new DatabaseException("Parameter " + parameter + " not found in query string");
-        }
-
-        return indices;
+    public Map<String, Class<?>> columns() {
+        return columns;
     }
 
-    public Class<?> typeOf(String name) {
-        Class<?> type = types.get(name.toLowerCase());
-
-        if (type == null) {
-            throw new DatabaseException("Type of " + name + " has not been specified");
-        }
-
-        return type;
+    public Map<String, Class<?>> parameters() {
+        return parameters;
     }
 
-    public Integer listSizeOf(String name) {
-        return lists.get(name.toLowerCase());
+    public Map<String, int[]> parameterIndices() {
+        return parameterIndices;
     }
 
-    public static final class Builder {
+    public Map<String, Integer> parameterListSizes() {
+        return parameterListsSizes;
+    }
+
+    public Map<String, Class<?>> keys() {
+        return keys;
+    }
+
+    public ReadonlyStatementBuilder on(ReadonlyDatabase database) {
+        return new ReadonlyStatementBuilder(database.prepare(this));
+    }
+
+    public StatementBuilder on(Database database) {
+        return new StatementBuilder(database.prepare(this));
+    }
+
+    public static class QueryBuilder {
 
         private final String sql;
-        private final HashMap<String, Class<?>> types;
-        private final HashMap<String, Integer> lists;
+        private final HashMap<String, Class<?>> parameters;
+        private final HashMap<String, Integer> parameterListSizes;
+        private final HashMap<String, Class<?>> columns;
+        private final HashMap<String, Class<?>> keys;
 
-        private Builder(String sql) {
+        private QueryBuilder(String sql) {
             this.sql = sql;
-            types = new HashMap<>();
-            lists = new HashMap<>();
+            parameters = new HashMap<>();
+            parameterListSizes = new HashMap<>();
+            columns = new HashMap<>();
+            keys = new HashMap<>();
         }
 
-        public Builder declare(String name, Class<?> type) {
-            // Ensure parameters are not declared multiple times with different types
-            Class<?> t = types.get(name);
+        private QueryBuilder add(String desc, Map<String, Class<?>> map, String name, Class<?> type) {
+            // Ensure columns are not declared multiple times with different types
+            name = name.toLowerCase();
+            Class<?> t = map.get(name);
 
             if (t != null && !t.equals(type)) {
-                throw new DatabaseException("Parameter " + name + " with type " + t + " was re-declared with different type " + type);
+                throw new DatabaseException(desc + " " + name + " with type " + t + " was re-declared with different type " + type);
             }
 
-            types.put(name, type);
+            map.put(name, type);
 
             return this;
         }
 
-        public Builder declareAll(Map<String, Class<?>> types) {
+        public QueryBuilder column(String name, Class<?> type) {
+            return add("Column", columns, name, type);
+        }
+
+        public QueryBuilder columns(Map<String, Class<?>> types) {
             for (Map.Entry<String, Class<?>> e : types.entrySet()) {
-                declare(e.getKey(), e.getValue());
+                column(e.getKey(), e.getValue());
             }
 
             return this;
         }
 
-        public Builder declare(String name, Class<?> type, int size) {
-            if (size <= 0) {
-                throw new DatabaseException("List parameter size must be one or greater");
+        public QueryBuilder parameter(String name, Class<?> type) {
+            return add("Parameter", parameters, name, type);
+        }
+
+        public QueryBuilder parameters(Map<String, Class<?>> types) {
+            for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+                parameter(e.getKey(), e.getValue());
             }
 
-            lists.put(name, size);
+            return this;
+        }
+
+        public QueryBuilder parameter(String name, Class<?> type, int size) {
+            if (size <= 0) {
+                throw new DatabaseException("List parameters size must be one or greater");
+            }
+
+            parameterListSizes.put(name, size);
 
             for (int i = 0; i < size; i++) {
-                declare(parameterListIndexer(name, i), type);
+                parameter(parameterListIndexer(name, i), type);
+            }
+
+            return this;
+        }
+
+        public QueryBuilder key(String name, Class<?> type) {
+            return add("Key", keys, name, type);
+        }
+
+        public QueryBuilder keys(Map<String, Class<?>> types) {
+            for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+                key(e.getKey(), e.getValue());
             }
 
             return this;
         }
 
         public Query build() {
-            return new Query(sql, types, lists);
+            return new Query(
+                    sql,
+                    Collections.unmodifiableMap(parameters),
+                    Collections.unmodifiableMap(parameterListSizes),
+                    Collections.unmodifiableMap(columns),
+                    Collections.unmodifiableMap(keys));
+        }
+
+    }
+
+    public static class ReadonlyStatementBuilder {
+
+        protected final ReadonlyStatement statement;
+
+        private ReadonlyStatementBuilder(ReadonlyStatement statement) {
+            this.statement = statement;
+        }
+
+        public <T> ReadonlyStatementBuilder bind(String name, T value) {
+            try {
+                statement.bind(name, value);
+            } catch (DatabaseException e) {
+                statement.close();
+                throw e;
+            }
+
+            return this;
+        }
+
+        public Cursor query() {
+            return new ClosingCursor(statement, statement.query());
+        }
+
+    }
+
+    public static class StatementBuilder extends ReadonlyStatementBuilder {
+
+        private StatementBuilder(Statement statement) {
+            super(statement);
+        }
+
+        public void execute() {
+            try {
+                ((Statement) statement).execute();
+            } finally {
+                statement.close();
+            }
+        }
+
+        public long update() {
+            try {
+                return ((Statement) statement).update();
+            } finally {
+                statement.close();
+            }
+        }
+
+        public Cursor insert() {
+            return new ClosingCursor(statement, ((Statement) statement).insert());
         }
 
     }
 
     /**
-     * <p>Parse a query for named parameter named in the form of a colon (:) followed by
+     * <p>Parse a query for named parameters named in the form of a colon (:) followed by
      * a java identifier and insert a ? at these occurrences.
      * Additionally map the replaced occurrences to unique sequential indexes starting
-     * at zero and store the result in the provided parameter map.</p>
+     * at zero and store the result in the provided parameters map.</p>
      * <p/>
      * <p>For example <code>SELECT name FROM person WHERE name = :name AND (mother_surname = :surname OR father_surname
      * = :surname)</code> becomes <code>SELECT name FROM person WHERE name = ? AND (mother_surname = ? OR father_surname
-     * = ?)</code> and the parameter index map will contain the values <code>{"name": [0], "surname": [1, 2]}</code></p>
+     * = ?)</code> and the parameters index map will contain the values <code>{"name": [0], "surname": [1, 2]}</code></p>
      *
      * @param query            The query to parse.
-     * @param parameterIndexes The map which to fill with parameter indexes.
+     * @param parameterIndexes The map which to fill with parameters indexes.
      * @return The query with the named parameters replaced with ?.
      */
     private static String parseParameterQuery(String query, Map<String, List<Integer>> parameterIndexes, Map<String, Integer> listParameters) {
@@ -214,17 +312,17 @@ public final class Query {
             if (c == ':') {
                 i++;
 
-                // Empty parameter at end.
+                // Empty parameters at end.
                 if (i == l)
-                    throw new IllegalArgumentException("Empty parameter at query end.");
+                    throw new IllegalArgumentException("Empty parameters at query end.");
 
                 char ps = query.charAt(i);
 
-                // Illegal parameter start.
+                // Illegal parameters start.
                 if (!Character.isJavaIdentifierStart(ps))
-                    throw new IllegalArgumentException("Character " + ps + " is not a valid parameter (character position " + i + ").");
+                    throw new IllegalArgumentException("Character " + ps + " is not a valid parameters (character position " + i + ").");
 
-                // Build parameter string.
+                // Build parameters string.
                 parameterBuilder.setLength(0);
                 parameterBuilder.append(ps);
                 i++;
@@ -235,7 +333,7 @@ public final class Query {
                     parameterBuilder.append(p);
                 }
 
-                // Add parameter to parameter indexes map and substitute it with a ? in the resulting query.
+                // Add parameters to parameters indexes map and substitute it with a ? in the resulting query.
                 String parameter = parameterBuilder.toString();
                 Integer listParameterSize = listParameters.get(parameter);
 

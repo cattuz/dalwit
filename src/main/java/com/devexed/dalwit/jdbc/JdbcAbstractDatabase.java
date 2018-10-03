@@ -82,9 +82,9 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     }
 
     @Override
-    public QueryStatement createQuery(Query query) {
+    public Statement prepare(Query query) {
         checkActive();
-        return new JdbcQueryStatement(this, query);
+        return new JdbcStatement(this, query);
     }
 
     @Override

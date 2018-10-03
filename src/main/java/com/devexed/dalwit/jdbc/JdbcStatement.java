@@ -1,42 +1,115 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.Accessor;
-import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.Query;
-import com.devexed.dalwit.Statement;
+import com.devexed.dalwit.*;
 import com.devexed.dalwit.util.AbstractCloseable;
 
 import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-abstract class JdbcStatement extends AbstractCloseable implements Statement {
+final class JdbcStatement extends AbstractCloseable implements Statement {
 
-    final Query query;
-    final JdbcAbstractDatabase database;
-    PreparedStatement statement;
+    private final Query query;
+    private final JdbcAbstractDatabase database;
+    private final PreparedStatement statement;
 
     JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this.database = database;
         this.query = query;
+
+        try {
+            if (query.keys().isEmpty()) {
+                // Regular query, update or execute statement
+                statement = database.connection.prepareStatement(query.sql());
+            } else {
+                // Insert statement with returnable generated columns
+                statement = database.generatedKeysSelector.prepareInsertStatement(database.connection, query.sql(), query.keys());
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
     }
 
-    final void assignStatement(PreparedStatement statement) {
-        this.statement = statement;
+    @Override
+    public Cursor query() {
+        checkNotClosed();
+        database.checkActive();
+
+        try {
+            Map<String, Cursor.Getter<?>> columns = new HashMap<>();
+            ResultSet resultSet = statement.executeQuery();
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+            for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
+                String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1));
+                Class<?> columnType = query.columns().get(column.toLowerCase());
+                Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
+
+                if (accessor == null) {
+                    throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + column + ")");
+                }
+
+                columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
+            }
+
+            return new ResultSetCursor(resultSet, columns);
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
+
+    @Override
+    public long update() {
+        checkNotClosed();
+        database.checkActive();
+
+        try {
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
+
+    @Override
+    public void execute() {
+        checkNotClosed();
+        database.checkActive();
+
+        try {
+            statement.execute();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    }
+
+    @Override
+    public Cursor insert() {
+        checkNotClosed();
+        database.checkActive();
+
+        try {
+            statement.executeUpdate();
+            return database.generatedKeysSelector.selectGeneratedKeys(database, statement, query.keys());
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
     }
 
     @Override
     public <T> Binder<T> binder(String parameter) {
         checkNotClosed();
-        Integer listSize = query.listSizeOf(parameter);
+        Integer listSize = query.parameterListSizes().get(parameter.toLowerCase());
 
         if (listSize == null) {
             // Scalar parameter
-            Class<?> parameterType = query.typeOf(parameter);
-            int[] parameterIndices = query.indicesOf(parameter);
+            Class<?> parameterType = query.parameters().get(parameter.toLowerCase());
+            int[] parameterIndices = query.parameterIndices().get(parameter.toLowerCase());
             Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(parameterType);
 
             if (accessor == null) {

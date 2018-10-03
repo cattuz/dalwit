@@ -2,7 +2,6 @@ package com.devexed.dalwit;
 
 import com.devexed.dalwit.util.ObjectDescriptor;
 import com.devexed.dalwit.util.ObjectIterable;
-import com.devexed.dalwit.util.Statements;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
@@ -46,42 +45,36 @@ public abstract class DatabaseTestCase extends TestCase {
 
     public void testIgnoresParameterInSQLGroups() {
         Query insertQuery = Query.builder("INSERT INTO q (a AS ':b', a AS [:c]) VALUES (:a, \":d\")")
-                .declare("a", String.class)
+                .parameter("a", String.class)
                 .build();
-        insertQuery.typeOf("a"); // Should have been parsed as parameter
-
-        try {
-            insertQuery.typeOf("b"); // Should NOT have been parsed as parameter
-            insertQuery.typeOf("c"); // -"-
-            insertQuery.typeOf("d"); // -"-
-            fail("Parameter in group should not be parsed");
-        } catch (DatabaseException e) {
-            // Should throw
-        }
+        assertTrue(insertQuery.parameters().containsKey("a")); // Should have been parsed as parameter
+        assertFalse(insertQuery.parameters().containsKey("b")); // Should NOT have been parsed as parameter
+        assertFalse(insertQuery.parameters().containsKey("c")); // -"-
+        assertFalse(insertQuery.parameters().containsKey("d")); // -"-
     }
 
     public void testBindsTypedQueryParameter() {
         Query createTable = Query.of("CREATE TABLE q2 (a TEXT NOT NULL)");
-        Query insertQuery = Query.builder("INSERT INTO q2 (a) VALUES (:a)").declare("a", Integer.class).build();
+        Query insertQuery = Query.builder("INSERT INTO q2 (a) VALUES (:a)").parameter("a", Integer.class).build();
 
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
-        UpdateStatement queryStatement = transaction.createUpdate(insertQuery);
-        queryStatement.bind("a", 123);
+        transaction.prepare(createTable).execute();
+        Statement Statement = transaction.prepare(insertQuery);
+        Statement.bind("a", 123);
         transaction.commit();
         transaction.close();
     }
 
     public void testBindWrongQueryParameterTypeThrows() {
         Query createTable = Query.of("CREATE TABLE q3 (a TEXT NOT NULL)");
-        Query insertQuery = Query.builder("INSERT INTO q3 (a) VALUES (:a)").declare("a", Integer.class).build();
+        Query insertQuery = Query.builder("INSERT INTO q3 (a) VALUES (:a)").parameter("a", Integer.class).build();
 
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
-        UpdateStatement queryStatement = transaction.createUpdate(insertQuery);
+        transaction.prepare(createTable).execute();
+        Statement Statement = transaction.prepare(insertQuery);
 
         try {
-            queryStatement.bind("a", "test");
+            Statement.bind("a", "test");
             fail("Bound wrong type to parameter");
         } catch (Exception e) {
             // Success if reached.
@@ -101,17 +94,17 @@ public abstract class DatabaseTestCase extends TestCase {
         Query createTable = Query.of("CREATE TABLE t1 (a TEXT NOT NULL)");
         Query insertQuery = Query
                 .builder("INSERT INTO t1 (a) VALUES (:a)")
-                .declare("a", String.class)
+                .parameter("a", String.class)
                 .build();
         Query selectQuery = Query
                 .builder("SELECT a FROM t1")
-                .declare("a", String.class)
+                .column("a", String.class)
                 .build();
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
-        UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
+        transaction.prepare(createTable).execute();
+        Statement updateStatement = transaction.prepare(insertQuery);
         updateStatement.bind("a", "committed");
         assertEquals(1, updateStatement.update());
         transaction.commit();
@@ -121,8 +114,8 @@ public abstract class DatabaseTestCase extends TestCase {
         reopenDatabase();
 
         // Query to confirm committal.
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertTrue(cursor.next());
         assertEquals("committed", cursor.get("a"));
         assertFalse(cursor.next());
@@ -131,17 +124,17 @@ public abstract class DatabaseTestCase extends TestCase {
 
     public void testTransactionRollsBack() {
         Query createTable = Query.of("CREATE TABLE t2 (a TEXT NOT NULL)");
-        Query insertQuery = Query.builder("INSERT INTO t2 (a) VALUES (:a)").declare("a", String.class).build();
-        Query selectQuery = Query.builder("SELECT a FROM t2").declare("a", String.class).build();
+        Query insertQuery = Query.builder("INSERT INTO t2 (a) VALUES (:a)").parameter("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t2").column("a", String.class).build();
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
+        transaction.prepare(createTable).execute();
         transaction.commit();
         transaction.close();
 
         Transaction insertTransaction = db.transact();
-        UpdateStatement updateStatement = insertTransaction.createUpdate(insertQuery);
+        Statement updateStatement = insertTransaction.prepare(insertQuery);
         updateStatement.bind("a", "committed");
         assertEquals(1, updateStatement.update());
         insertTransaction.close();
@@ -150,25 +143,25 @@ public abstract class DatabaseTestCase extends TestCase {
         reopenDatabase();
 
         // Query to confirm committal.
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertFalse(cursor.next());
         cursor.close();
     }
 
     public void testNestedTransactionsCommit() {
         Query createTable = Query.of("CREATE TABLE t3 (a VARCHAR(50) NULL)");
-        Query insertQuery = Query.builder("INSERT INTO t3 (a) VALUES (:a)").declare("a", String.class).build();
-        Query selectQuery = Query.builder("SELECT a FROM t3").declare("a", String.class).build();
+        Query insertQuery = Query.builder("INSERT INTO t3 (a) VALUES (:a)").parameter("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t3").column("a", String.class).build();
 
         // Start parent transaction.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
+        transaction.prepare(createTable).execute();
 
         // Committed child transaction.
         {
             Transaction committedTransaction = transaction.transact();
-            UpdateStatement updateStatement = committedTransaction.createUpdate(insertQuery);
+            Statement updateStatement = committedTransaction.prepare(insertQuery);
             updateStatement.bind("a", "should be committed");
             assertEquals(1, updateStatement.update());
             committedTransaction.commit();
@@ -178,7 +171,7 @@ public abstract class DatabaseTestCase extends TestCase {
         // Uncommitted child transaction.
         {
             Transaction uncommittedTransaction = transaction.transact();
-            UpdateStatement updateStatement = uncommittedTransaction.createUpdate(insertQuery);
+            Statement updateStatement = uncommittedTransaction.prepare(insertQuery);
             updateStatement.bind("a", "should not be committed");
             assertEquals(1, updateStatement.update());
             // Close without commit.
@@ -192,8 +185,8 @@ public abstract class DatabaseTestCase extends TestCase {
         reopenDatabase();
 
         // Ensure only committed child transaction was persisted.
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertTrue(cursor.next());
         assertEquals("should be committed", cursor.get("a"));
         assertFalse(cursor.next());
@@ -223,13 +216,13 @@ public abstract class DatabaseTestCase extends TestCase {
 
         // A text column type works when the underlying JDBC implementation supports coercing BigDecimal to text.
         Query createTable = Query.of("CREATE TABLE t5 (n TEXT)");
-        Query insertQuery = Query.builder("INSERT INTO t5 (n) VALUES (:n)").declare("n", BigDecimal.class).build();
-        Query selectQuery = Query.builder("SELECT n FROM t5").declare("n", BigDecimal.class).build();
+        Query insertQuery = Query.builder("INSERT INTO t5 (n) VALUES (:n)").parameter("n", BigDecimal.class).build();
+        Query selectQuery = Query.builder("SELECT n FROM t5").column("n", BigDecimal.class).build();
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
-        UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
+        transaction.prepare(createTable).execute();
+        Statement updateStatement = transaction.prepare(insertQuery);
         updateStatement.bind("n", bigDecimal);
         assertEquals(1, updateStatement.update());
         transaction.commit();
@@ -238,8 +231,8 @@ public abstract class DatabaseTestCase extends TestCase {
         reopenDatabase();
 
         // Query to confirm committal.
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertTrue(cursor.next());
         assertEquals(bigDecimal, cursor.get("n"));
         assertFalse(cursor.next());
@@ -247,9 +240,9 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testDeepNestedTransactionsRollback() {
-        Statements.execute(db, Query.of("CREATE TABLE t6 (a VARCHAR(50) NULL)"));
-        Query insertQuery = Query.builder("INSERT INTO t6 (a) VALUES (:a)").declare("a", String.class).build();
-        Query selectQuery = Query.builder("SELECT a FROM t6").declare("a", String.class).build();
+        Query.of("CREATE TABLE t6 (a VARCHAR(50) NULL)").on(db).execute();
+        Query insertQuery = Query.builder("INSERT INTO t6 (a) VALUES (:a)").parameter("a", String.class).build();
+        Query selectQuery = Query.builder("SELECT a FROM t6").column("a", String.class).build();
 
         int transactionDepth = 15;
         ArrayList<Transaction> transactions = new ArrayList<>(transactionDepth);
@@ -260,7 +253,7 @@ public abstract class DatabaseTestCase extends TestCase {
             transaction = transaction.transact();
             transactions.add(transaction);
 
-            UpdateStatement updateStatement = transaction.createUpdate(insertQuery);
+            Statement updateStatement = transaction.prepare(insertQuery);
             updateStatement.bind("a", "should be committed");
             assertEquals(1, updateStatement.update());
         }
@@ -277,24 +270,24 @@ public abstract class DatabaseTestCase extends TestCase {
         reopenDatabase();
 
         // Ensure table is empty
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertFalse(cursor.next());
     }
 
     public void testBinderAndGetter() {
         int count = 1000;
-        Statements.execute(db, Query.of("CREATE TABLE t7 (a INTEGER)"));
+        Query.of("CREATE TABLE t7 (a INTEGER)").on(db).execute();
 
         // Insert multiple values with the same binder
         Query insertQuery = Query
                 .builder("INSERT INTO t7 (a) VALUES (:a)")
-                .declare("a", Integer.TYPE)
+                .parameter("a", Integer.TYPE)
                 .build();
 
         try (Transaction transaction = db.transact();
-             ExecutionStatement statement = transaction.createExecution(insertQuery)) {
-            Statement.Binder<Integer> binder = statement.binder("a");
+             Statement statement = transaction.prepare(insertQuery)) {
+            ReadonlyStatement.Binder<Integer> binder = statement.binder("a");
 
             for (int i = 0; i < count; i++) {
                 binder.bind(i);
@@ -307,10 +300,10 @@ public abstract class DatabaseTestCase extends TestCase {
         // Verify the values with same getter
         Query selectQuery = Query
                 .builder("SELECT a FROM t7 ORDER BY a")
-                .declare("a", Integer.class)
+                .column("a", Integer.class)
                 .build();
 
-        try (QueryStatement statement = db.createQuery(selectQuery);
+        try (ReadonlyStatement statement = db.prepare(selectQuery);
              Cursor cursor = statement.query()) {
             Cursor.Getter<Integer> getter = cursor.getter("a");
             int i = 0;
@@ -324,11 +317,14 @@ public abstract class DatabaseTestCase extends TestCase {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static final class ObjectDescriptorTest {
+
         public int a;
         public String b;
         public byte[] c;
 
+        @SuppressWarnings("unused")
         public ObjectDescriptorTest() {
         }
 
@@ -374,17 +370,17 @@ public abstract class DatabaseTestCase extends TestCase {
         }
 
         // Insert all objects then select and make sure they are identical
-        Statements.execute(db, Query.of("CREATE TABLE t8 (a INTEGER, b TEXT, c BLOB)"));
-        Query insertQuery = objectDescriptor.sql("INSERT INTO t8 (a, b, c) VALUES (:a, :b, :c)");
-        Query selectQuery = objectDescriptor.sql("SELECT * FROM t8 ORDER BY a");
+        Query.of("CREATE TABLE t8 (a INTEGER, b TEXT, c BLOB)").on(db).execute();
+        Query insertQuery = Query.builder("INSERT INTO t8 (a, b, c) VALUES (:a, :b, :c)").parameters(objectDescriptor.types()).build();
+        Query selectQuery = Query.builder("SELECT * FROM t8 ORDER BY a").columns(objectDescriptor.types()).build();
 
         try (Transaction transaction = db.transact();
-             ExecutionStatement statement = transaction.createExecution(insertQuery)) {
+             Statement statement = transaction.prepare(insertQuery)) {
             objectDescriptor.bindAll(statement, objects);
             transaction.commit();
         }
 
-        try (ObjectIterable<ObjectDescriptorTest> selectedObjects = objectDescriptor.iterate(Statements.query(db, selectQuery))) {
+        try (ObjectIterable<ObjectDescriptorTest> selectedObjects = objectDescriptor.iterate(selectQuery.on(db).query())) {
             int i = 0;
 
             for (ObjectDescriptorTest object : selectedObjects) {
@@ -398,13 +394,13 @@ public abstract class DatabaseTestCase extends TestCase {
 
     public void testListParameter() {
         // Insert all objects then select and make sure they are identical
-        Statements.execute(db, Query.of("CREATE TABLE t9 (a INTEGER)"));
-        Statements.execute(db, Query.of("INSERT INTO t9 (a) VALUES (1), (2), (3), (4), (5)"));
+        Query.of("CREATE TABLE t9 (a INTEGER)").on(db).execute();
+        Query.of("INSERT INTO t9 (a) VALUES (1), (2), (3), (4), (5)").on(db).execute();
 
-        try (QueryStatement selectStatement = db.createQuery(Query
+        try (ReadonlyStatement selectStatement = db.prepare(Query
                 .builder("SELECT * FROM t9 WHERE a in :as")
-                .declare("a", Integer.TYPE)
-                .declare("as", Integer.TYPE, 3)
+                .column("a", Integer.TYPE)
+                .parameter("as", Integer.TYPE, 3)
                 .build())) {
             int[] checks = new int[] {1, 3, 5};
             selectStatement.bind("as", checks);
@@ -422,13 +418,12 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testSnakeCaseColumn() {
-        // Insert all objects then select and make sure they are identical
-        Statements.execute(db, Query.of("CREATE TABLE t10 (a_a INTEGER)"));
-        Statements.execute(db, Query.of("INSERT INTO t10 (a_a) VALUES (1)"));
+        Query.of("CREATE TABLE t10 (a_a INTEGER)").on(db).execute();
+        Query.of("INSERT INTO t10 (a_a) VALUES (1)").on(db).execute();
 
-        try (QueryStatement selectStatement = db.createQuery(Query
+        try (ReadonlyStatement selectStatement = db.prepare(Query
                 .builder("SELECT * FROM t10")
-                .declare("aA", Integer.TYPE)
+                .column("aA", Integer.TYPE)
                 .build())) {
             try (Cursor cursor = selectStatement.query()) {
                 assertTrue(cursor.next());

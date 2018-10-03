@@ -3,7 +3,6 @@ package com.devexed.dalwit.jdbc;
 import com.devexed.dalwit.*;
 
 import java.sql.SQLException;
-import java.util.Map;
 
 abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transaction {
 
@@ -29,21 +28,9 @@ abstract class JdbcTransaction extends JdbcAbstractDatabase implements Transacti
     }
 
     @Override
-    public UpdateStatement createUpdate(Query query) {
+    public Statement prepare(Query query) {
         checkActive();
-        return new JdbcUpdateStatement(this, query);
-    }
-
-    @Override
-    public ExecutionStatement createExecution(Query query) {
-        checkActive();
-        return new JdbcExecutionStatement(this, query);
-    }
-
-    @Override
-    public InsertStatement createInsert(Query query, Map<String, Class<?>> keys) {
-        checkActive();
-        return new JdbcInsertStatement(this, query, keys);
+        return new JdbcStatement(this, query);
     }
 
     @Override

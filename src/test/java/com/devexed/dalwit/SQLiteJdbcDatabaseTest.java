@@ -3,10 +3,6 @@ package com.devexed.dalwit;
 import com.devexed.dalwit.jdbc.DefaultJdbcAccessorFactory;
 import com.devexed.dalwit.jdbc.FunctionJdbcGeneratedKeysSelector;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 public final class SQLiteJdbcDatabaseTest extends JdbcFileDatabaseTestCase {
 
     public SQLiteJdbcDatabaseTest() {
@@ -15,17 +11,20 @@ public final class SQLiteJdbcDatabaseTest extends JdbcFileDatabaseTestCase {
     }
 
     public void testInsertWithGeneratedKeys() {
-        Map<String, Class<?>> keys = Collections.singletonMap("id", Long.TYPE);
-        HashMap<String, Class<?>> columnTypes = new HashMap<>(keys);
-        columnTypes.put("a", String.class);
         Query createTable = Query.of("CREATE TABLE t4 (id INTEGER PRIMARY KEY, a VARCHAR(50) NOT NULL)");
-        Query insertQuery = Query.of("INSERT INTO t4 (a) VALUES (:a)", columnTypes);
-        Query selectQuery = Query.of("SELECT id FROM t4", columnTypes);
+        Query insertQuery = Query.builder("INSERT INTO t4 (a) VALUES (:a)")
+                .parameter("a", String.class)
+                .key("id", Long.TYPE)
+                .build();
+        Query selectQuery = Query.builder("SELECT id FROM t4")
+                .column("id", Long.TYPE)
+                .build();
+
 
         // Create table and insert a row.
         Transaction transaction = db.transact();
-        transaction.createExecution(createTable).execute();
-        InsertStatement insertStatement = transaction.createInsert(insertQuery, keys);
+        transaction.prepare(createTable).execute();
+        Statement insertStatement = transaction.prepare(insertQuery);
         insertStatement.bind("a", "more text");
         Cursor keyCursor = insertStatement.insert();
         assertTrue(keyCursor.next());
@@ -38,8 +37,8 @@ public final class SQLiteJdbcDatabaseTest extends JdbcFileDatabaseTestCase {
         reopenDatabase();
 
         // Query to confirm only the inserted keys exist in the table.
-        QueryStatement queryStatement = db.createQuery(selectQuery);
-        Cursor cursor = queryStatement.query();
+        ReadonlyStatement Statement = db.prepare(selectQuery);
+        Cursor cursor = Statement.query();
         assertTrue(cursor.next());
         assertEquals((long) cursor.get("id"), insertedKey);
         assertFalse(cursor.next());
