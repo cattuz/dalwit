@@ -47,15 +47,30 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
-                String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1));
-                Class<?> columnType = query.columns().get(column.toLowerCase());
-                Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
+                String rawColumnName = resultSetMetaData.getColumnName(i + 1);
+                String columnName = null;
+                Class<?> columnType = null;
 
-                if (accessor == null) {
-                    throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + column + ")");
+                for (String c : new String[]{
+                        rawColumnName.toLowerCase(),
+                        database.columnNameMapper.apply(rawColumnName).toLowerCase()
+                }) {
+                    columnName = c;
+                    columnType = query.columns().get(c);
+
+                    if (columnType != null)
+                        break;
                 }
 
-                columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
+                if (columnType != null) {
+                    Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
+
+                    if (accessor == null) {
+                        throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + columnName + ")");
+                    }
+
+                    columns.put(columnName, new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
+                }
             }
 
             return new ResultSetCursor(resultSet, columns);
@@ -108,8 +123,14 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
 
         if (listSize == null) {
             // Scalar parameter
-            Class<?> parameterType = query.parameters().get(parameter.toLowerCase());
-            int[] parameterIndices = query.parameterIndices().get(parameter.toLowerCase());
+            String parameterName = parameter.toLowerCase();
+            Class<?> parameterType = query.parameters().get(parameterName);
+
+            if (parameterType == null) {
+                throw new DatabaseException("No type is defined for parameter " + parameter);
+            }
+
+            int[] parameterIndices = query.parameterIndices().get(parameterName);
             Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(parameterType);
 
             if (accessor == null) {
