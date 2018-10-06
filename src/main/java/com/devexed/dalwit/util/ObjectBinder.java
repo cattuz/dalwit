@@ -3,7 +3,6 @@ package com.devexed.dalwit.util;
 import com.devexed.dalwit.DatabaseException;
 import com.devexed.dalwit.ReadonlyStatement;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,11 +11,11 @@ public final class ObjectBinder<T> {
 
     private final Accessor[] accessors;
 
-    ObjectBinder(ReadonlyStatement statement, HashMap<String, ObjectDescriptor.Property> properties) {
+    ObjectBinder(ReadonlyStatement statement, HashMap<String, ObjectDescriptor.Getter> properties) {
         accessors = new Accessor[properties.size()];
         int i = 0;
 
-        for (Map.Entry<String, ObjectDescriptor.Property> property : properties.entrySet()) {
+        for (Map.Entry<String, ObjectDescriptor.Getter> property : properties.entrySet()) {
             String column = property.getKey();
             accessors[i] = new Accessor(property.getValue(), statement.binder(column));
             i++;
@@ -35,10 +34,10 @@ public final class ObjectBinder<T> {
 
     private static class Accessor {
 
-        private final ObjectDescriptor.Property property;
+        private final ObjectDescriptor.Getter property;
         private final ReadonlyStatement.Binder<Object> binder;
 
-        private Accessor(ObjectDescriptor.Property property, ReadonlyStatement.Binder<Object> binder) {
+        private Accessor(ObjectDescriptor.Getter property, ReadonlyStatement.Binder<Object> binder) {
             this.property = property;
             this.binder = binder;
         }

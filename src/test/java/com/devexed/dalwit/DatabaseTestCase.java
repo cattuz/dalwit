@@ -320,13 +320,9 @@ public abstract class DatabaseTestCase extends TestCase {
     @SuppressWarnings("WeakerAccess")
     public static final class ObjectDescriptorTest {
 
-        public int a;
-        public String b;
-        public byte[] c;
-
-        @SuppressWarnings("unused")
-        public ObjectDescriptorTest() {
-        }
+        public final int a;
+        public final String b;
+        public final byte[] c;
 
         public ObjectDescriptorTest(int a, String b, byte[] c) {
             this.a = a;

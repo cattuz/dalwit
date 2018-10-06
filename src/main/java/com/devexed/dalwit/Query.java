@@ -312,17 +312,17 @@ public final class Query {
             if (c == ':') {
                 i++;
 
-                // Empty parameters at end.
+                // Empty parameter at end.
                 if (i == l)
-                    throw new IllegalArgumentException("Empty parameters at query end.");
+                    throw new IllegalArgumentException("Empty parameter at query end.");
 
                 char ps = query.charAt(i);
 
-                // Illegal parameters start.
+                // Illegal parameter start.
                 if (!Character.isJavaIdentifierStart(ps))
-                    throw new IllegalArgumentException("Character " + ps + " is not a valid parameters (character position " + i + ").");
+                    throw new IllegalArgumentException("Character " + ps + " is not a valid parameter (character position " + i + ").");
 
-                // Build parameters string.
+                // Build parameter string.
                 parameterBuilder.setLength(0);
                 parameterBuilder.append(ps);
                 i++;
@@ -333,28 +333,29 @@ public final class Query {
                     parameterBuilder.append(p);
                 }
 
-                // Add parameters to parameters indexes map and substitute it with a ? in the resulting query.
+                // Add parameter to parameters indexes map and substitute it with a ? in the resulting query.
                 String parameter = parameterBuilder.toString();
                 Integer listParameterSize = listParameters.get(parameter);
 
                 if (listParameterSize != null) {
                     queryBuilder.append('(');
-                    List<Integer> indexes = parameterIndexes.computeIfAbsent(parameterListIndexer(parameter, 0), k -> new ArrayList<>());
-                    indexes.add(parameterIndex);
+                    parameterIndexes
+                            .computeIfAbsent(parameterListIndexer(parameter, 0), k -> new ArrayList<>())
+                            .add(parameterIndex);
                     parameterIndex++;
                     queryBuilder.append('?');
 
                     for (int p = 1; p < listParameterSize; p++) {
-                        indexes = parameterIndexes.computeIfAbsent(parameterListIndexer(parameter, p), k -> new ArrayList<>());
                         queryBuilder.append(",?");
-                        indexes.add(parameterIndex);
+                        parameterIndexes
+                                .computeIfAbsent(parameterListIndexer(parameter, p), k -> new ArrayList<>())
+                                .add(parameterIndex);
                         parameterIndex++;
                     }
 
                     queryBuilder.append(')');
                 } else {
-                    List<Integer> indexes = parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>());
-                    indexes.add(parameterIndex);
+                    parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>()).add(parameterIndex);
                     parameterIndex++;
                     queryBuilder.append('?');
                 }

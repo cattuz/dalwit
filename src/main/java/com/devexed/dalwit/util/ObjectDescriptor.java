@@ -1,9 +1,14 @@
 package com.devexed.dalwit.util;
 
-import com.devexed.dalwit.*;
+import com.devexed.dalwit.Cursor;
+import com.devexed.dalwit.DatabaseException;
+import com.devexed.dalwit.ReadonlyStatement;
+import com.devexed.dalwit.Statement;
 
 import java.lang.reflect.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class ObjectDescriptor<T> {
 
@@ -12,88 +17,104 @@ public final class ObjectDescriptor<T> {
     }
 
     private final Constructor<T> constructor;
-    private final HashMap<String, Class<?>> types;
-    private final HashMap<String, Property> properties;
+    private final ArrayList<String> constructorParameters;
+    private final LinkedHashMap<String, Class<?>> types;
+    private final LinkedHashMap<String, Setter> setters;
+    private final LinkedHashMap<String, Getter> getters;
 
+    @SuppressWarnings("unchecked")
     private ObjectDescriptor(Class<T> type) {
-        try {
-            constructor = type.getDeclaredConstructor();
-            constructor.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            throw new DatabaseException(e);
-        }
-
-        types = new HashMap<>();
-        properties = new HashMap<>();
+        types = new LinkedHashMap<>();
+        setters = new LinkedHashMap<>();
+        getters = new LinkedHashMap<>();
 
         // Find public fields
         for (Field field : type.getDeclaredFields()) {
             int modifiers = field.getModifiers();
 
-            if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers)) continue;
+            if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers)) continue;
 
-            types.put(field.getName(), field.getType());
-            properties.put(field.getName(), new Property() {
-                @Override
-                public void set(Object instance, Object value) throws IllegalAccessException {
-                    field.set(instance, value);
-                }
-
-                @Override
-                public Object get(Object instance) throws IllegalAccessException {
-                    return field.get(instance);
-                }
-            });
+            types.put(field.getName().toLowerCase(), field.getType());
+            getters.put(field.getName().toLowerCase(), field::get);
+            if (!Modifier.isFinal(modifiers)) setters.put(field.getName().toLowerCase(), field::set);
         }
 
         // Find public setters and getters
-        for (Method setter : type.getDeclaredMethods()) {
-            int modifiers = setter.getModifiers();
+        for (Method method : type.getDeclaredMethods()) {
+            int modifiers = method.getModifiers();
+            String methodName = method.getName();
 
-            if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers)) continue;
+            if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers) || methodName.length() <= 3) continue;
 
-            String property = setter.getName().substring(4);
+            String property = methodName.substring(3).toLowerCase();
+            Class<?> propertyType;
 
-            if (property.startsWith("set") &&
-                    property.length() > 3 &&
-                    setter.getReturnType().equals(Void.TYPE) &&
-                    setter.getParameterCount() == 1) {
-                property = setter.getName().substring(4);
-                property = property.substring(0, 1).toUpperCase() + property.substring(1);
-                Method getter;
+            if (methodName.startsWith("set") && method.getReturnType().equals(Void.TYPE) && method.getParameterCount() == 1) {
+                propertyType = method.getParameters()[0].getType();
+                setters.put(property, method::invoke);
+                method.setAccessible(true);
+            } else if (methodName.startsWith("get") && !method.getReturnType().equals(Void.TYPE) && method.getParameterCount() == 0) {
+                propertyType = method.getReturnType();
+                getters.put(property, method::invoke);
+                method.setAccessible(true);
+            } else {
+                continue;
+            }
 
-                try {
-                    getter = type.getMethod("get" + property);
-                } catch (NoSuchMethodException e) {
-                    continue;
+            Class<?> presentType = types.get(property);
+
+            if (presentType == null) {
+                types.put(property, propertyType);
+            } else if (!presentType.equals(propertyType)) {
+                throw new DatabaseException("Mismatched types for property " + property + ". Type " + propertyType + " does not match " + presentType);
+            }
+        }
+
+        // Find constructor with greatest number of parameters
+        Constructor<?> constructor = null;
+        ArrayList<String> constructorParameters = null;
+
+        for (Constructor<?> c : type.getDeclaredConstructors()) {
+            Parameter[] parameters = c.getParameters();
+
+            if (parameters.length <= types.size()) {
+                int parameterIndex = 0;
+                boolean typesMatch = true;
+                ArrayList<String> cps = new ArrayList<>();
+
+                for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+                    String parameterName = e.getKey();
+                    Class<?> parameterType = e.getValue();
+
+                    if (!parameterType.isAssignableFrom(parameters[parameterIndex].getType())) {
+                        typesMatch = false;
+                        break;
+                    }
+
+                    cps.add(parameterName);
+                    parameterIndex++;
+
+                    if (parameterIndex >= parameters.length) break;
                 }
 
-                Class<?> propertyType = setter.getParameters()[0].getType();
-                int getterModifiers = setter.getModifiers();
-
-                if (!Modifier.isPublic(getterModifiers) || Modifier.isStatic(getterModifiers)) continue;
-
-                if (getter.getReturnType().equals(propertyType)) {
-                    setter.setAccessible(true);
-                    types.put(property.toLowerCase(), propertyType);
-                    properties.put(property.toLowerCase(), new Property() {
-                        @Override
-                        public void set(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
-                            setter.invoke(instance, value);
-                        }
-
-                        @Override
-                        public Object get(Object instance) throws InvocationTargetException, IllegalAccessException {
-                            return getter.invoke(instance);
-                        }
-                    });
+                if (typesMatch) {
+                    c.setAccessible(true);
+                    constructor = c;
+                    constructorParameters = cps;
                 }
             }
         }
+
+        if (constructor == null) {
+            throw new DatabaseException("No object constructor could be found for type " + type);
+        }
+
+        this.constructor = (Constructor<T>) constructor;
+        this.constructorParameters = constructorParameters;
     }
 
     public ObjectBinder<T> binder(ReadonlyStatement statement) {
-        return new ObjectBinder<>(statement, properties);
+        return new ObjectBinder<>(statement, getters);
     }
 
     public void bindAll(Statement statement, Iterable<T> objects) {
@@ -121,7 +142,7 @@ public final class ObjectDescriptor<T> {
     }
 
     public ObjectGetter<T> getter(Cursor cursor) {
-        return new ObjectGetter<>(cursor, constructor, properties);
+        return new ObjectGetter<>(cursor, constructor, constructorParameters, setters);
     }
 
     public ObjectIterable<T> iterate(Cursor cursor) {
@@ -132,9 +153,13 @@ public final class ObjectDescriptor<T> {
         return types;
     }
 
-    interface Property {
+    interface Setter {
 
         void set(Object instance, Object value) throws InvocationTargetException, IllegalAccessException;
+
+    }
+
+    interface Getter {
 
         Object get(Object instance) throws InvocationTargetException, IllegalAccessException;
 
