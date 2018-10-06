@@ -26,6 +26,20 @@ public final class Statements {
     }
 
     /**
+     * @deprecated
+     * @see #query(ReadonlyDatabase, Query)
+     */
+    public static Cursor query(ReadonlyDatabase database, Query query, Map<String, ?> parameters) {
+        try (ReadonlyStatement statement = database.prepare(query)) {
+            bindAll(statement, parameters);
+
+            try (Cursor cursor = statement.query()) {
+                return new ClosingCursor(statement, cursor);
+            }
+        }
+    }
+
+    /**
      * Run an execute statement. Use <code>query.on(database).execute()</code> instead
      * @deprecated Use <code>query.on(database).execute()</code> instead
      * @param database The database on which to run the query
@@ -33,6 +47,17 @@ public final class Statements {
      */
     public static void execute(Database database, Query query) {
         query.on(database).execute();
+    }
+
+    /**
+     * @deprecated
+     * @see #query(ReadonlyDatabase, Query)
+     */
+    public static void execute(Database database, Query query, Map<String, ?> parameters) {
+        try (Statement statement = database.prepare(query)) {
+            bindAll(statement, parameters);
+            statement.execute();
+        }
     }
 
     /**
@@ -44,6 +69,17 @@ public final class Statements {
      */
     public static long update(Database database, Query query) {
         return query.on(database).update();
+    }
+
+    /**
+     * @deprecated
+     * @see #query(ReadonlyDatabase, Query)
+     */
+    public static long update(Database database, Query query, Map<String, ?> parameters) {
+        try (Statement statement = database.prepare(query)) {
+            bindAll(statement, parameters);
+            return statement.update();
+        }
     }
 
     /**

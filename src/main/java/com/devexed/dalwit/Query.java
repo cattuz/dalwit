@@ -18,7 +18,19 @@ public final class Query {
     }
 
     public static Query of(String sql) {
-        return new Query(sql, emptyTypeMap, emptyListSizeMap, emptyTypeMap, emptyTypeMap);
+        return new Query(sql, emptyTypeMap, emptyListSizeMap, emptyTypeMap, emptyTypeMap, true);
+    }
+
+    public static Query of(String sql, Map<String, Class<?>> parameters, Map<String, Class<?>> columns, Map<String, Class<?>> keys) {
+        return new Query(sql, parameters, emptyListSizeMap, columns, keys, true);
+    }
+
+    public static Query of(String sql, Map<String, Class<?>> parameters, Map<String, Class<?>> columns) {
+        return new Query(sql, parameters, emptyListSizeMap, columns, emptyTypeMap, true);
+    }
+
+    public static Query of(String sql, Map<String, Class<?>> types) {
+        return new Query(sql, types, emptyListSizeMap, types, emptyTypeMap, false);
     }
 
     private final String rawSql;
@@ -28,8 +40,7 @@ public final class Query {
     private final Map<String, Class<?>> keys;
     private final Map<String, int[]> parameterIndices;
 
-    private Query(String sql, Map<String, Class<?>> parameters, Map<String, Integer> parameterListsSizes, Map<String, Class<?>> columns, Map<String, Class<?>> keys) {
-        this.parameters = parameters;
+    private Query(String sql, Map<String, Class<?>> parameters, Map<String, Integer> parameterListsSizes, Map<String, Class<?>> columns, Map<String, Class<?>> keys, boolean checkParameters) {
         this.parameterListsSizes = parameterListsSizes;
         this.columns = columns;
         this.keys = keys;
@@ -52,14 +63,27 @@ public final class Query {
 
         this.parameterIndices = Collections.unmodifiableMap(mutableParameterIndices);
 
-        // Ensure no parameters are left undefined
-        LinkedHashSet<String> missingTypes = new LinkedHashSet<>(mutableParameterIndices.keySet());
-        missingTypes.removeAll(this.parameters.keySet());
+        if (checkParameters) {
+            // Ensure no parameters are left undefined
+            LinkedHashSet<String> missingTypes = new LinkedHashSet<>(mutableParameterIndices.keySet());
+            missingTypes.removeAll(parameters.keySet());
 
-        if (!missingTypes.isEmpty()) {
-            throw new DatabaseException(String.format(
-                    "Parameter%s " + String.join(",", missingTypes) + " must have a type declaration for the query:\n" + sql,
-                    missingTypes.size() > 1 ? "s" : ""));
+            if (!missingTypes.isEmpty()) {
+                throw new DatabaseException(String.format(
+                        "Parameter%s " + String.join(",", missingTypes) + " must have a type declaration for the query:\n" + sql,
+                        missingTypes.size() > 1 ? "s" : ""));
+            }
+
+            this.parameters = Collections.unmodifiableMap(parameters);
+        } else {
+            HashMap<String, Class<?>> mutableParameters = new HashMap<>(parameters.size());
+
+            for (Map.Entry<String, Class<?>> e : parameters.entrySet()) {
+                if (parameterIndices.containsKey(e.getKey()))
+                    parameters.put(e.getKey(), e.getValue());
+            }
+
+            this.parameters = Collections.unmodifiableMap(mutableParameters);
         }
     }
 
@@ -181,7 +205,8 @@ public final class Query {
                     Collections.unmodifiableMap(parameters),
                     Collections.unmodifiableMap(parameterListSizes),
                     Collections.unmodifiableMap(columns),
-                    Collections.unmodifiableMap(keys));
+                    Collections.unmodifiableMap(keys),
+                    true);
         }
 
     }
