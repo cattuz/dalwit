@@ -30,12 +30,15 @@ public final class Statements {
      * @see #query(ReadonlyDatabase, Query)
      */
     public static Cursor query(ReadonlyDatabase database, Query query, Map<String, ?> parameters) {
-        try (ReadonlyStatement statement = database.prepare(query)) {
-            bindAll(statement, parameters);
+        ReadonlyStatement statement = null;
 
-            try (Cursor cursor = statement.query()) {
-                return new ClosingCursor(statement, cursor);
-            }
+        try {
+            statement = database.prepare(query);
+            bindAll(statement, parameters);
+            return new ClosingCursor(statement, statement.query());
+        } catch (Exception e) {
+            if (statement != null) statement.close();
+            throw e;
         }
     }
 

@@ -13,24 +13,45 @@ public final class Query {
         return parameter + '$' + index;
     }
 
+    /**
+     * Start building a new query.
+     * @param sql The query's SQL
+     * @return A query builder
+     */
     public static QueryBuilder builder(String sql) {
         return new QueryBuilder(sql);
     }
 
+    /**
+     * Build a query without columns and parameters.
+     * @param sql The query's SQL
+     * @return The built query
+     */
     public static Query of(String sql) {
         return new Query(sql, emptyTypeMap, emptyListSizeMap, emptyTypeMap, emptyTypeMap, true);
     }
 
-    public static Query of(String sql, Map<String, Class<?>> parameters, Map<String, Class<?>> columns, Map<String, Class<?>> keys) {
-        return new Query(sql, parameters, emptyListSizeMap, columns, keys, true);
-    }
-
-    public static Query of(String sql, Map<String, Class<?>> parameters, Map<String, Class<?>> columns) {
-        return new Query(sql, parameters, emptyListSizeMap, columns, emptyTypeMap, true);
-    }
-
+    /**
+     * Build a query by specifying column and parameter types with a single map.
+     * @deprecated Specify columns and parameters separately with {@link #builder(String)}
+     * @param sql The query's SQL
+     * @param types The column and parameter types
+     * @return The built query
+     */
     public static Query of(String sql, Map<String, Class<?>> types) {
-        return new Query(sql, types, emptyListSizeMap, types, emptyTypeMap, false);
+        Map<String, Class<?>> lowerCaseTypes = toLowerCaseMap(types);
+
+        return new Query(sql, lowerCaseTypes, emptyListSizeMap, lowerCaseTypes, emptyTypeMap, false);
+    }
+
+    private static LinkedHashMap<String, Class<?>> toLowerCaseMap(Map<String, Class<?>> types) {
+        LinkedHashMap<String, Class<?>> result = new LinkedHashMap<>(types.size());
+
+        for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+            result.put(e.getKey().toLowerCase(), e.getValue());
+        }
+
+        return result;
     }
 
     private final String rawSql;
@@ -58,29 +79,35 @@ public final class Query {
 
             for (int i = 0; i < indices.length; i++) indices[i] = boxedIndices.get(i);
 
-            mutableParameterIndices.put(e.getKey(), indices);
+            mutableParameterIndices.put(e.getKey().toLowerCase(), indices);
         }
 
         this.parameterIndices = Collections.unmodifiableMap(mutableParameterIndices);
 
         if (checkParameters) {
             // Ensure no parameters are left undefined
-            LinkedHashSet<String> missingTypes = new LinkedHashSet<>(mutableParameterIndices.keySet());
-            missingTypes.removeAll(parameters.keySet());
+            if (!parameters.keySet().containsAll(mutableParameterIndices.keySet())) {
+                LinkedHashSet<String> missingTypes = new LinkedHashSet<>(mutableParameterIndices.keySet());
+                missingTypes.removeAll(parameters.keySet());
 
-            if (!missingTypes.isEmpty()) {
+                StringBuilder params = new StringBuilder();
+                Iterator<String> missingTypesIterator = missingTypes.iterator();
+                params.append(missingTypesIterator.next());
+
+                while (missingTypesIterator.hasNext()) params.append(", ").append(missingTypesIterator.next());
+
                 throw new DatabaseException(String.format(
-                        "Parameter%s " + String.join(",", missingTypes) + " must have a type declaration for the query:\n" + sql,
+                        "Parameter%s " + params.toString() + " must have a type declaration for the query:\n" + sql,
                         missingTypes.size() > 1 ? "s" : ""));
             }
 
             this.parameters = Collections.unmodifiableMap(parameters);
         } else {
-            HashMap<String, Class<?>> mutableParameters = new HashMap<>(parameters.size());
+            HashMap<String, Class<?>> mutableParameters = new HashMap<>(parameterIndices.size());
 
             for (Map.Entry<String, Class<?>> e : parameters.entrySet()) {
                 if (parameterIndices.containsKey(e.getKey()))
-                    parameters.put(e.getKey(), e.getValue());
+                    mutableParameters.put(e.getKey(), e.getValue());
             }
 
             this.parameters = Collections.unmodifiableMap(mutableParameters);
@@ -122,17 +149,17 @@ public final class Query {
     public static class QueryBuilder {
 
         private final String sql;
-        private final HashMap<String, Class<?>> parameters;
-        private final HashMap<String, Integer> parameterListSizes;
-        private final HashMap<String, Class<?>> columns;
-        private final HashMap<String, Class<?>> keys;
+        private final LinkedHashMap<String, Class<?>> parameters;
+        private final LinkedHashMap<String, Integer> parameterListSizes;
+        private final LinkedHashMap<String, Class<?>> columns;
+        private final LinkedHashMap<String, Class<?>> keys;
 
         private QueryBuilder(String sql) {
             this.sql = sql;
-            parameters = new HashMap<>();
-            parameterListSizes = new HashMap<>();
-            columns = new HashMap<>();
-            keys = new HashMap<>();
+            parameters = new LinkedHashMap<>();
+            parameterListSizes = new LinkedHashMap<>();
+            columns = new LinkedHashMap<>();
+            keys = new LinkedHashMap<>();
         }
 
         private QueryBuilder add(String desc, Map<String, Class<?>> map, String name, Class<?> type) {

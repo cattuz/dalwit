@@ -5,10 +5,7 @@ import com.devexed.dalwit.util.ObjectIterable;
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Note: Tests written in JUNIT 3 style for Android compatibility.
@@ -362,7 +359,7 @@ public abstract class DatabaseTestCase extends TestCase {
         ArrayList<ObjectDescriptorTest> objects = new ArrayList<>();
 
         for (int i = 0; i < 1000; i++) {
-            objects.add(new ObjectDescriptorTest(i, "_" + i, new byte[] {(byte) i, (byte) (i << 1)}));
+            objects.add(new ObjectDescriptorTest(i, "_" + i, new byte[]{(byte) i, (byte) (i << 1)}));
         }
 
         // Insert all objects then select and make sure they are identical
@@ -398,7 +395,7 @@ public abstract class DatabaseTestCase extends TestCase {
                 .column("a", Integer.TYPE)
                 .parameter("as", Integer.TYPE, 3)
                 .build())) {
-            int[] checks = new int[] {1, 3, 5};
+            int[] checks = new int[]{1, 3, 5};
             selectStatement.bind("as", checks);
 
             try (Cursor cursor = selectStatement.query()) {
@@ -413,7 +410,7 @@ public abstract class DatabaseTestCase extends TestCase {
         }
     }
 
-    public void testSnakeCaseColumn() {
+    public void testSnakeCaseColumn1() {
         Query.of("CREATE TABLE t10 (a_a INTEGER)").on(db).execute();
         Query.of("INSERT INTO t10 (a_a) VALUES (1)").on(db).execute();
 
@@ -425,6 +422,17 @@ public abstract class DatabaseTestCase extends TestCase {
                 assertTrue(cursor.next());
                 assertEquals((int) cursor.get("aA"), 1);
             }
+        }
+    }
+
+    public void testSnakeCaseColumn2() {
+        Query.of("CREATE TABLE t10 (itemId_0 INTEGER)").on(db).execute();
+
+        try (Statement selectStatement = db.prepare(Query.of(
+                "INSERT INTO t10 (itemId_0) VALUES (:itemId_0)",
+                new HashMap<>() {{ put("itemId_0", Integer.TYPE); }}))) {
+            selectStatement.bind("itemId_0", 1);
+            selectStatement.execute();
         }
     }
 
