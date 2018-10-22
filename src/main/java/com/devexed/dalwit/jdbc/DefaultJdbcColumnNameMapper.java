@@ -1,5 +1,7 @@
 package com.devexed.dalwit.jdbc;
 
+import com.devexed.dalwit.util.SnakeCaseConverter;
+
 import java.util.function.Function;
 
 /**
@@ -9,21 +11,7 @@ public final class DefaultJdbcColumnNameMapper implements Function<String, Strin
 
     @Override
     public String apply(String s) {
-        StringBuilder result = new StringBuilder();
-        boolean nextIsUpperCase = false;
-
-        for (char c : s.toCharArray()) {
-            if (c == '_') {
-                nextIsUpperCase = true;
-            } else if (nextIsUpperCase) {
-                result.append(Character.toUpperCase(c));
-                nextIsUpperCase = false;
-            } else {
-                result.append(c);
-            }
-        }
-
-        return result.toString();
+        return SnakeCaseConverter.toSnakeCase(s);
     }
 
 }

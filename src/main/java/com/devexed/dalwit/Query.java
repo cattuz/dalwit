@@ -236,6 +236,14 @@ public final class Query {
                     true);
         }
 
+        public ReadonlyStatementBuilder on(ReadonlyDatabase database) {
+            return build().on(database);
+        }
+
+        public StatementBuilder on(Database database) {
+            return build().on(database);
+        }
+
     }
 
     public static class ReadonlyStatementBuilder {
@@ -267,6 +275,11 @@ public final class Query {
 
         private StatementBuilder(Statement statement) {
             super(statement);
+        }
+
+        public <T> StatementBuilder bind(String name, T value) {
+            super.bind(name, value);
+            return this;
         }
 
         public void execute() {

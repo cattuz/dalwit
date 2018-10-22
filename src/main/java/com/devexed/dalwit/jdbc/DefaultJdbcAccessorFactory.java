@@ -5,10 +5,12 @@ import com.devexed.dalwit.AccessorFactory;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Accessor factory which maps the default JDBC types to classes.
@@ -288,6 +290,24 @@ public final class DefaultJdbcAccessorFactory
             @Override
             public Object get(ResultSet resultSet, int index) throws SQLException {
                 return resultSet.getBinaryStream(index + 1);
+            }
+        });
+        put(UUID.class, new JdbcAccessor() {
+            @Override
+            public void set(PreparedStatement statement, int index, Object value) throws SQLException {
+                UUID uuid = (UUID) value;
+                ByteBuffer buffer = ByteBuffer.allocate(16);
+                buffer.putLong(uuid.getMostSignificantBits());
+                buffer.putLong(uuid.getMostSignificantBits());
+                statement.setBytes(index + 1, buffer.array());
+            }
+
+            @Override
+            public Object get(ResultSet resultSet, int index) throws SQLException {
+                ByteBuffer buffer = ByteBuffer.allocate(16);
+                buffer.put(resultSet.getBytes(index + 1));
+                buffer.rewind();
+                return new UUID(buffer.getLong(), buffer.getLong());
             }
         });
     }};

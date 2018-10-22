@@ -1,21 +1,21 @@
 package com.devexed.dalwit.util;
 
-import com.devexed.dalwit.Cursor;
-import com.devexed.dalwit.DatabaseException;
-import com.devexed.dalwit.ReadonlyStatement;
-import com.devexed.dalwit.Statement;
+import com.devexed.dalwit.*;
 
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public final class ObjectDescriptor<T> {
 
-    public static <T> ObjectDescriptor<T> of(Class<T> type) {
-        return new ObjectDescriptor<>(type);
+    public static <T> ObjectDescriptor<T> of(Class<T> type, String table) {
+        return new ObjectDescriptor<>(type, table);
     }
 
+    public static <T> ObjectDescriptor<T> of(Class<T> type) {
+        return new ObjectDescriptor<>(type, type.getSimpleName().toLowerCase());
+    }
+
+    private final String table;
     private final Constructor<T> constructor;
     private final ArrayList<String> constructorParameters;
     private final LinkedHashMap<String, Class<?>> types;
@@ -23,7 +23,8 @@ public final class ObjectDescriptor<T> {
     private final LinkedHashMap<String, Getter> getters;
 
     @SuppressWarnings("unchecked")
-    private ObjectDescriptor(Class<T> type) {
+    private ObjectDescriptor(Class<T> type, String table) {
+        this.table = table;
         types = new LinkedHashMap<>();
         setters = new LinkedHashMap<>();
         getters = new LinkedHashMap<>();
@@ -147,6 +148,92 @@ public final class ObjectDescriptor<T> {
 
     public ObjectIterable<T> iterate(Cursor cursor) {
         return new ObjectIterable<>(cursor, getter(cursor));
+    }
+
+    /**
+     * Start building a select query with the column part pre-filled with the object properties.
+     * @param sqlPart SQL after the FROM part. E.g. "WHERE id=0"
+     * @return A query builder
+     */
+    public Query.QueryBuilder select(String sqlPart, Set<String> parameters) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        Iterator<String> typeIterator = parameters.iterator();
+        sqlBuilder.append("SELECT \"").append(typeIterator.next()).append("\"");
+
+        while (typeIterator.hasNext()) sqlBuilder.append(",\"").append(typeIterator.next()).append("\"");
+
+        sqlBuilder.append(" FROM \"").append(table).append("\" ").append(sqlPart);
+
+        return Query.builder(sqlBuilder.toString()).columns(types);
+    }
+
+    /**
+     * @see #select(String, Set)
+     */
+    public Query.QueryBuilder select(String sqlPart) {
+        return select(sqlPart, types.keySet());
+    }
+
+    /**
+     * Build an insert query like "INSERT x INTO t VALUES (:x) for the object properties.
+     * @return A query builder
+     */
+    public Query.QueryBuilder insert(Set<String> parameters) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        Iterator<String> columnIterator = parameters.iterator();
+        sqlBuilder.append("INSERT INTO \"").append(table).append("\" (\"").append(columnIterator.next()).append("\"");
+
+        while (columnIterator.hasNext()) sqlBuilder.append(",\"").append(columnIterator.next()).append("\"");
+
+        sqlBuilder.append(") VALUES (");
+        Iterator<String> parameterIterator = types.keySet().iterator();
+        sqlBuilder.append(":").append(parameterIterator.next());
+
+        while (parameterIterator.hasNext()) sqlBuilder.append(",:").append(parameterIterator.next());
+
+        sqlBuilder.append(")");
+
+        return Query.builder(sqlBuilder.toString()).parameters(types);
+    }
+
+    /**
+     * @see #insert(Set)
+     */
+    public Query.QueryBuilder insert() {
+        return insert(types.keySet());
+    }
+
+    /**
+     * Build an update query like "UPDATE t SET x = :x".
+     * @param sqlPart The part after the SET list. E.g. "WHERE id = 0"
+     * @return A query builder
+     */
+    public Query.QueryBuilder update(String sqlPart, Set<String> parameters) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        Iterator<String> parameterIterator = parameters.iterator();
+        String firstParameter = parameterIterator.next();
+        sqlBuilder.append("UPDATE \"").append(table)
+                .append("\" SET \"")
+                .append(firstParameter).append("\"")
+                .append(" = :").append(firstParameter);
+
+        while (parameterIterator.hasNext()) {
+            String parameter = parameterIterator.next();
+            sqlBuilder
+                    .append(",\"").append(parameter).append("\"")
+                    .append(" = :").append(parameter);
+        }
+
+        sqlBuilder.append(sqlPart);
+
+        return Query.builder(sqlBuilder.toString()).parameters(types);
+    }
+
+    /**
+     * @see #update(String, Set)
+     */
+    public Query.QueryBuilder update(String sqlPart) {
+        return update(sqlPart, types.keySet());
     }
 
     public Map<String, Class<?>> types() {
