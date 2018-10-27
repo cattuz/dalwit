@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
+    final boolean readonly;
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
@@ -17,10 +18,12 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
 
     private JdbcTransaction child = null;
 
-    JdbcAbstractDatabase(java.sql.Connection connection,
+    JdbcAbstractDatabase(boolean readonly,
+                         java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector,
                          Function<String, String> columnNameMapper) {
+        this.readonly = readonly;
         this.connection = connection;
         this.accessorFactory = accessorFactory;
         this.generatedKeysSelector = generatedKeysSelector;

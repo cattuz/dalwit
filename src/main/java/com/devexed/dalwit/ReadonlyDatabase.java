@@ -11,4 +11,12 @@ public interface ReadonlyDatabase extends Closeable {
      */
     ReadonlyStatement prepare(Query query);
 
+    /**
+     * Start a transaction to read transactionally from the database.
+     *
+     * @return The transaction within which to read from the database.
+     * @throws DatabaseException If the transaction could not be started.
+     */
+    ReadonlyTransaction transact();
+
 }

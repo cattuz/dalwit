@@ -73,7 +73,7 @@ public final class JdbcConnection implements Connection {
             throw new DatabaseException(e);
         }
 
-        return new JdbcDatabase(connection, accessorFactory, generatedKeysSelector, columnNameMapper);
+        return new JdbcDatabase(readonly, connection, accessorFactory, generatedKeysSelector, columnNameMapper);
     }
 
     /**
