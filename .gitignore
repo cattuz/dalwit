@@ -6,10 +6,7 @@ local.properties
 
 # Gradle runtime
 .gradle/
-gradle/
-gradlew
-gradlew.bat
-gradle.properties
 
 # Build output
+out/
 build/
