@@ -1,6 +1,8 @@
 package com.devexed.dalwit;
 
 import com.devexed.dalwit.util.ObjectDescriptor;
+import com.devexed.dalwit.util.ObjectIterable;
+
 import junit.framework.TestCase;
 
 import java.math.BigDecimal;
@@ -354,8 +356,8 @@ public abstract class DatabaseTestCase extends TestCase {
     }
 
     public void testObjectMapper() {
-        var objectDescriptor = ObjectDescriptor.of(ObjectDescriptorTest.class, "t8");
-        var objects = new ArrayList<ObjectDescriptorTest>();
+        ObjectDescriptor<ObjectDescriptorTest> objectDescriptor = ObjectDescriptor.of(ObjectDescriptorTest.class, "t8");
+        ArrayList<ObjectDescriptorTest> objects = new ArrayList<>();
 
         for (int i = 0; i < 1000; i++) {
             objects.add(new ObjectDescriptorTest(i, "_" + i, new byte[]{(byte) i, (byte) (i << 1)}));
@@ -364,16 +366,16 @@ public abstract class DatabaseTestCase extends TestCase {
         // Insert all objects then select and make sure they are identical (use double quotes to match table name in H2)
         Query.of("CREATE TABLE \"t8\" (\"a\" INTEGER, \"b\" TEXT, \"c\" BLOB)").on(db).execute();
 
-        try (var transaction = db.transact();
-             var statement = transaction.prepare(objectDescriptor.insert().build())) {
+        try (Transaction transaction = db.transact();
+             Statement statement = transaction.prepare(objectDescriptor.insert().build())) {
             objectDescriptor.bindAll(statement, objects);
             transaction.commit();
         }
 
-        try (var selectedObjects = objectDescriptor.iterate(objectDescriptor.select("").on(db).query())) {
+        try (ObjectIterable<ObjectDescriptorTest> selectedObjects = objectDescriptor.iterate(objectDescriptor.select("").on(db).query())) {
             int i = 0;
 
-            for (var object : selectedObjects) {
+            for (ObjectDescriptorTest object : selectedObjects) {
                 assertEquals(object, objects.get(i));
                 i++;
             }
@@ -387,7 +389,7 @@ public abstract class DatabaseTestCase extends TestCase {
         Query.of("CREATE TABLE t9 (a INTEGER)").on(db).execute();
         Query.of("INSERT INTO t9 (a) VALUES (1), (2), (3), (4), (5)").on(db).execute();
 
-        try (var selectStatement = db.prepare(Query
+        try (Statement selectStatement = db.prepare(Query
                 .builder("SELECT * FROM t9 WHERE a in :as")
                 .column("a", Integer.TYPE)
                 .parameter("as", Integer.TYPE, 3)
@@ -427,7 +429,7 @@ public abstract class DatabaseTestCase extends TestCase {
 
         try (Statement selectStatement = db.prepare(Query.of(
                 "INSERT INTO t10 (itemId_0) VALUES (:itemId_0)",
-                new HashMap<>() {{ put("itemId_0", Integer.TYPE); }}))) {
+                new HashMap<String, Class<?>>() {{ put("itemId_0", Integer.TYPE); }}))) {
             selectStatement.bind("itemId_0", 1);
             selectStatement.execute();
         }
