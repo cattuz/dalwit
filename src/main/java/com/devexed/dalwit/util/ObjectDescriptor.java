@@ -7,25 +7,31 @@ import java.util.*;
 
 public final class ObjectDescriptor<T> {
 
+    public static <T> ObjectDescriptor<T> of(Class<T> type, String table, ObjectColumnMapper mapper) {
+        return new ObjectDescriptor<>(type, table, mapper);
+    }
+
     public static <T> ObjectDescriptor<T> of(Class<T> type, String table) {
-        return new ObjectDescriptor<>(type, table);
+        return of(type, table, new DefaultObjectColumnMapper());
     }
 
     public static <T> ObjectDescriptor<T> of(Class<T> type) {
-        return new ObjectDescriptor<>(type, type.getSimpleName().toLowerCase());
+        return of(type, type.getSimpleName().toLowerCase());
     }
 
     private final String table;
     private final Constructor<T> constructor;
     private final ArrayList<String> constructorParameters;
-    private final LinkedHashMap<String, Class<?>> types;
+    private final LinkedHashMap<String, Class<?>> columns;
+    private final LinkedHashMap<String, Class<?>> parameters;
     private final LinkedHashMap<String, Setter> setters;
     private final LinkedHashMap<String, Getter> getters;
 
     @SuppressWarnings("unchecked")
-    private ObjectDescriptor(Class<T> type, String table) {
+    private ObjectDescriptor(Class<T> type, String table, ObjectColumnMapper mapper) {
         this.table = table;
-        types = new LinkedHashMap<>();
+        columns = new LinkedHashMap<>();
+        parameters = new LinkedHashMap<>();
         setters = new LinkedHashMap<>();
         getters = new LinkedHashMap<>();
 
@@ -35,7 +41,8 @@ public final class ObjectDescriptor<T> {
 
             if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers)) continue;
 
-            types.put(field.getName().toLowerCase(), field.getType());
+            columns.put(mapper.apply(field.getName()).toLowerCase(), field.getType());
+            parameters.put(field.getName().toLowerCase(), field.getType());
             getters.put(field.getName().toLowerCase(), field::get);
             if (!Modifier.isFinal(modifiers)) setters.put(field.getName().toLowerCase(), field::set);
         }
@@ -50,11 +57,11 @@ public final class ObjectDescriptor<T> {
             String property = methodName.substring(3).toLowerCase();
             Class<?> propertyType;
 
-            if (methodName.startsWith("set") && method.getReturnType().equals(Void.TYPE) && method.getParameterCount() == 1) {
-                propertyType = method.getParameters()[0].getType();
+            if (methodName.startsWith("set") && method.getReturnType().equals(Void.TYPE) && method.getParameterTypes().length == 1) {
+                propertyType = method.getParameterTypes()[0];
                 setters.put(property, method::invoke);
                 method.setAccessible(true);
-            } else if (methodName.startsWith("get") && !method.getReturnType().equals(Void.TYPE) && method.getParameterCount() == 0) {
+            } else if (methodName.startsWith("get") && !method.getReturnType().equals(Void.TYPE) && method.getParameterTypes().length == 0) {
                 propertyType = method.getReturnType();
                 getters.put(property, method::invoke);
                 method.setAccessible(true);
@@ -62,10 +69,11 @@ public final class ObjectDescriptor<T> {
                 continue;
             }
 
-            Class<?> presentType = types.get(property);
+            Class<?> presentType = parameters.get(property);
 
             if (presentType == null) {
-                types.put(property, propertyType);
+                columns.put(property, propertyType);
+                parameters.put(property, propertyType);
             } else if (!presentType.equals(propertyType)) {
                 throw new DatabaseException("Mismatched types for property " + property + ". Type " + propertyType + " does not match " + presentType);
             }
@@ -76,26 +84,26 @@ public final class ObjectDescriptor<T> {
         ArrayList<String> constructorParameters = null;
 
         for (Constructor<?> c : type.getDeclaredConstructors()) {
-            Parameter[] parameters = c.getParameters();
+            Class<?>[] parameters = c.getParameterTypes();
 
-            if (parameters.length <= types.size()) {
+            if (parameters.length <= this.parameters.size()) {
                 int parameterIndex = 0;
                 boolean typesMatch = true;
                 ArrayList<String> cps = new ArrayList<>();
 
-                for (Map.Entry<String, Class<?>> e : types.entrySet()) {
+                for (Map.Entry<String, Class<?>> e : this.parameters.entrySet()) {
+                    if (parameterIndex >= parameters.length) break;
+
                     String parameterName = e.getKey();
                     Class<?> parameterType = e.getValue();
 
-                    if (!parameterType.isAssignableFrom(parameters[parameterIndex].getType())) {
+                    if (!parameterType.isAssignableFrom(parameters[parameterIndex])) {
                         typesMatch = false;
                         break;
                     }
 
                     cps.add(parameterName);
                     parameterIndex++;
-
-                    if (parameterIndex >= parameters.length) break;
                 }
 
                 if (typesMatch) {
@@ -155,23 +163,30 @@ public final class ObjectDescriptor<T> {
      * @param sqlPart SQL after the FROM part. E.g. "WHERE id=0"
      * @return A query builder
      */
-    public Query.QueryBuilder select(String sqlPart, Set<String> parameters) {
+    public Query.QueryBuilder select(String sqlPart, Set<String> columns) {
         StringBuilder sqlBuilder = new StringBuilder();
-        Iterator<String> typeIterator = parameters.iterator();
+        Iterator<String> typeIterator = columns.iterator();
         sqlBuilder.append("SELECT \"").append(typeIterator.next()).append("\"");
 
         while (typeIterator.hasNext()) sqlBuilder.append(",\"").append(typeIterator.next()).append("\"");
 
         sqlBuilder.append(" FROM \"").append(table).append("\" ").append(sqlPart);
 
-        return Query.builder(sqlBuilder.toString()).columns(types);
+        return Query.builder(sqlBuilder.toString()).columns(this.columns);
     }
 
     /**
      * @see #select(String, Set)
      */
     public Query.QueryBuilder select(String sqlPart) {
-        return select(sqlPart, types.keySet());
+        return select(sqlPart, this.columns.keySet());
+    }
+
+    /**
+     * @see #select(String)
+     */
+    public Query.QueryBuilder select() {
+        return select("");
     }
 
     /**
@@ -186,21 +201,21 @@ public final class ObjectDescriptor<T> {
         while (columnIterator.hasNext()) sqlBuilder.append(",\"").append(columnIterator.next()).append("\"");
 
         sqlBuilder.append(") VALUES (");
-        Iterator<String> parameterIterator = types.keySet().iterator();
+        Iterator<String> parameterIterator = this.parameters.keySet().iterator();
         sqlBuilder.append(":").append(parameterIterator.next());
 
         while (parameterIterator.hasNext()) sqlBuilder.append(",:").append(parameterIterator.next());
 
         sqlBuilder.append(")");
 
-        return Query.builder(sqlBuilder.toString()).parameters(types);
+        return Query.builder(sqlBuilder.toString()).parameters(this.parameters);
     }
 
     /**
      * @see #insert(Set)
      */
     public Query.QueryBuilder insert() {
-        return insert(types.keySet());
+        return insert(parameters.keySet());
     }
 
     /**
@@ -226,18 +241,22 @@ public final class ObjectDescriptor<T> {
 
         sqlBuilder.append(sqlPart);
 
-        return Query.builder(sqlBuilder.toString()).parameters(types);
+        return Query.builder(sqlBuilder.toString()).parameters(this.parameters);
     }
 
     /**
      * @see #update(String, Set)
      */
     public Query.QueryBuilder update(String sqlPart) {
-        return update(sqlPart, types.keySet());
+        return update(sqlPart, parameters.keySet());
     }
 
-    public Map<String, Class<?>> types() {
-        return types;
+    public Map<String, Class<?>> columns() {
+        return columns;
+    }
+
+    public Map<String, Class<?>> parameters() {
+        return parameters;
     }
 
     interface Setter {

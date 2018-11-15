@@ -14,7 +14,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
-    final Function<String, String> columnNameMapper;
+    final JdbcColumnNameMapper columnNameMapper;
 
     private JdbcTransaction child = null;
 
@@ -22,7 +22,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
                          java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector,
-                         Function<String, String> columnNameMapper) {
+                         JdbcColumnNameMapper columnNameMapper) {
         this.readonly = readonly;
         this.connection = connection;
         this.accessorFactory = accessorFactory;

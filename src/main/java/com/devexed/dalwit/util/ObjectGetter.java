@@ -30,7 +30,7 @@ public final class ObjectGetter<T> {
 
         for (Map.Entry<String, ObjectDescriptor.Setter> property : properties.entrySet()) {
             String column = property.getKey();
-            accessors[accessorIndex] = new Accessor(property.getValue(), cursor.getter(column));
+            accessors[accessorIndex] = new Accessor(column, property.getValue(), cursor.getter(column));
             accessorIndex++;
         }
     }
@@ -43,13 +43,22 @@ public final class ObjectGetter<T> {
             constructorParameters[i] = constructorGetters[i].get();
         }
 
+        //noinspection TryWithIdenticalCatches
         try {
             instance = constructor.newInstance(constructorParameters);
 
             for (Accessor accessor : accessors) {
+                if (accessor.getter == null) {
+                    throw new RuntimeException("Missing getter for " + accessor.column);
+                }
+
                 accessor.property.set(instance, accessor.getter.get());
             }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        } catch (InstantiationException e) {
+            throw new DatabaseException(e);
+        } catch (IllegalAccessException e) {
+            throw new DatabaseException(e);
+        } catch (InvocationTargetException e) {
             throw new DatabaseException(e);
         }
 
@@ -58,10 +67,12 @@ public final class ObjectGetter<T> {
 
     private static class Accessor {
 
+        private final String column;
         private final ObjectDescriptor.Setter property;
         private final Cursor.Getter<Object> getter;
 
-        private Accessor(ObjectDescriptor.Setter property, Cursor.Getter<Object> getter) {
+        private Accessor(String column, ObjectDescriptor.Setter property, Cursor.Getter<Object> getter) {
+            this.column = column;
             this.property = property;
             this.getter = getter;
         }

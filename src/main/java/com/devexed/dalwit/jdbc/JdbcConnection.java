@@ -19,7 +19,7 @@ public final class JdbcConnection implements Connection {
     private final Properties properties;
     private final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     private final JdbcGeneratedKeysSelector generatedKeysSelector;
-    private final Function<String, String> columnNameMapper;
+    private final JdbcColumnNameMapper columnNameMapper;
 
     /**
      * Creates a connection object which can open databases for reading or writing using a JDBC driver.
@@ -34,7 +34,7 @@ public final class JdbcConnection implements Connection {
     public JdbcConnection(String driverClass, String url, Properties properties,
                           AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                           JdbcGeneratedKeysSelector generatedKeysSelector,
-                          Function<String, String> columnNameMapper) {
+                          JdbcColumnNameMapper columnNameMapper) {
         this.driverClass = driverClass;
         this.url = url;
         this.properties = properties;

@@ -13,10 +13,10 @@ import java.util.Map;
 /**
  * A cursor over a JDBC result set.
  */
-final class ResultSetCursor extends AbstractCloseable implements Cursor {
+public final class ResultSetCursor extends AbstractCloseable implements Cursor {
 
     private final ResultSet resultSet;
-    private final Map<String, Getter<?>> columns;
+    public final Map<String, Getter<?>> columns;
 
     ResultSetCursor(ResultSet resultSet, Map<String, Getter<?>> columns) {
         this.resultSet = resultSet;

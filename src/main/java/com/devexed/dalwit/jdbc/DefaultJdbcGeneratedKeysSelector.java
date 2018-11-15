@@ -27,7 +27,7 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
         for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
-            String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1));
+            String column = database.columnNameMapper.apply(resultSetMetaData.getColumnName(i + 1)).toLowerCase();
             Class<?> keyType = keyTypes.get(column);
 
             if (keyType == null) throw new DatabaseException("Missing type for generated key column " + column);
@@ -38,7 +38,7 @@ public final class DefaultJdbcGeneratedKeysSelector implements JdbcGeneratedKeys
                 throw new DatabaseException("No accessor is defined for type " + keyType + " (generated key column " + column + ")");
             }
 
-            columns.put(column.toLowerCase(), new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
+            columns.put(column, new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
         }
 
         return new ResultSetCursor(resultSet, columns);

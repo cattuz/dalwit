@@ -48,13 +48,18 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
 
             for (int i = 0, l = resultSetMetaData.getColumnCount(); i < l; i++) {
                 String rawColumnName = resultSetMetaData.getColumnName(i + 1);
+
+                if (rawColumnName.startsWith("\"") && rawColumnName.endsWith("\"")) {
+                    rawColumnName = rawColumnName
+                            .substring(1, rawColumnName.length() - 2)
+                            .replace("\"\"", "\"");
+                }
+
+                String mappedColumnName = database.columnNameMapper.apply(rawColumnName).toLowerCase();
                 String columnName = null;
                 Class<?> columnType = null;
 
-                for (String c : new String[]{
-                        rawColumnName.toLowerCase(),
-                        database.columnNameMapper.apply(rawColumnName).toLowerCase()
-                }) {
+                for (String c : new String[]{ rawColumnName.toLowerCase(), mappedColumnName }) {
                     columnName = c;
                     columnType = query.columns().get(c);
 
@@ -66,10 +71,14 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
                     Accessor<PreparedStatement, ResultSet, SQLException> accessor = database.accessorFactory.create(columnType);
 
                     if (accessor == null) {
-                        throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + columnName + ")");
+                        throw new DatabaseException("No accessor is defined for type " + columnType + " (column " + rawColumnName + ")");
                     }
 
-                    columns.put(columnName, new ResultSetCursor.ResultSetGetter(accessor, resultSet, i));
+                    ResultSetCursor.ResultSetGetter getter = new ResultSetCursor.ResultSetGetter(accessor, resultSet, i);
+                    columns.put(columnName, getter);
+
+                    if (!columnName.equals(mappedColumnName))
+                        columns.put(mappedColumnName, getter);
                 }
             }
 

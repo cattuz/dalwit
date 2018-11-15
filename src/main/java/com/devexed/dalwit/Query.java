@@ -404,23 +404,40 @@ public final class Query {
 
                 if (listParameterSize != null) {
                     queryBuilder.append('(');
-                    parameterIndexes
-                            .computeIfAbsent(parameterListIndexer(parameter, 0), k -> new ArrayList<>())
-                            .add(parameterIndex);
+                    List<Integer> indices = parameterIndexes.get(parameter);
+
+                    if (indices == null) {
+                        indices = new ArrayList<>();
+                        parameterIndexes.put(parameter, indices);
+                    }
+
+                    indices.add(parameterIndex);
                     parameterIndex++;
                     queryBuilder.append('?');
 
                     for (int p = 1; p < listParameterSize; p++) {
                         queryBuilder.append(",?");
-                        parameterIndexes
-                                .computeIfAbsent(parameterListIndexer(parameter, p), k -> new ArrayList<>())
-                                .add(parameterIndex);
+                        indices = parameterIndexes.get(parameter);
+
+                        if (indices == null) {
+                            indices = new ArrayList<>();
+                            parameterIndexes.put(parameter, indices);
+                        }
+
+                        indices.add(parameterIndex);
                         parameterIndex++;
                     }
 
                     queryBuilder.append(')');
                 } else {
-                    parameterIndexes.computeIfAbsent(parameter, k -> new ArrayList<>()).add(parameterIndex);
+                    List<Integer> indices = parameterIndexes.get(parameter);
+
+                    if (indices == null) {
+                        indices = new ArrayList<>();
+                        parameterIndexes.put(parameter, indices);
+                    }
+
+                    indices.add(parameterIndex);
                     parameterIndex++;
                     queryBuilder.append('?');
                 }

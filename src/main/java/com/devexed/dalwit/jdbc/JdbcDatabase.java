@@ -13,7 +13,7 @@ public final class JdbcDatabase extends JdbcAbstractDatabase {
     public JdbcDatabase(boolean readonly, Connection connection,
                         AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                         JdbcGeneratedKeysSelector generatedKeysSelector,
-                        Function<String, String> columnNameMapper) {
+                        JdbcColumnNameMapper columnNameMapper) {
         super(readonly, connection, accessorFactory, generatedKeysSelector, columnNameMapper);
     }
 

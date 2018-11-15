@@ -7,11 +7,11 @@ import java.util.function.Function;
 /**
  * Function which maps snake_case names into camelCase.
  */
-public final class DefaultJdbcColumnNameMapper implements Function<String, String> {
+public final class DefaultJdbcColumnNameMapper implements JdbcColumnNameMapper {
 
     @Override
     public String apply(String s) {
-        return SnakeCaseConverter.toSnakeCase(s);
+        return SnakeCaseConverter.toCamelCase(s);
     }
 
 }
