@@ -49,7 +49,7 @@ public final class ObjectGetter<T> {
 
             for (Accessor accessor : accessors) {
                 if (accessor.getter == null) {
-                    throw new RuntimeException("Missing getter for " + accessor.column);
+                    throw new DatabaseException("Missing getter for " + accessor.column);
                 }
 
                 accessor.property.set(instance, accessor.getter.get());

@@ -51,7 +51,7 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
 
                 if (rawColumnName.startsWith("\"") && rawColumnName.endsWith("\"")) {
                     rawColumnName = rawColumnName
-                            .substring(1, rawColumnName.length() - 2)
+                            .substring(1, rawColumnName.length() - 1)
                             .replace("\"\"", "\"");
                 }
 
