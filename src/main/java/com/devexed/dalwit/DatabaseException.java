@@ -10,6 +10,10 @@ public final class DatabaseException extends RuntimeException {
         super(s);
     }
 
+    public DatabaseException(String s, Throwable e) {
+        super(s, e);
+    }
+
     public DatabaseException(Throwable e) {
         super(e);
     }

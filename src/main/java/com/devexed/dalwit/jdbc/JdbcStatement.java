@@ -22,17 +22,18 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
     JdbcStatement(JdbcAbstractDatabase database, Query query) {
         this.database = database;
         this.query = query;
+        String sql = query.sql();
 
         try {
             if (query.keys().isEmpty()) {
                 // Regular query, update or execute statement
-                statement = database.connection.prepareStatement(query.sql());
+                statement = database.connection.prepareStatement(sql);
             } else {
                 // Insert statement with returnable generated columns
                 statement = database.generatedKeysSelector.prepareInsertStatement(database.connection, query.sql(), query.keys());
             }
         } catch (SQLException e) {
-            throw new DatabaseException(e);
+            throw new DatabaseException("SQL Error when executing query: " + sql, e);
         }
     }
 
