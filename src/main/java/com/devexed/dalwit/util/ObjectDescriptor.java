@@ -42,9 +42,9 @@ public final class ObjectDescriptor<T> {
             if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers)) continue;
 
             columns.put(mapper.apply(field.getName()).toLowerCase(), field.getType());
-            parameters.put(field.getName().toLowerCase(), field.getType());
-            getters.put(field.getName().toLowerCase(), field::get);
-            if (!Modifier.isFinal(modifiers)) setters.put(field.getName().toLowerCase(), field::set);
+            parameters.put(mapper.apply(field.getName()).toLowerCase(), field.getType());
+            getters.put(mapper.apply(field.getName()).toLowerCase(), field::get);
+            if (!Modifier.isFinal(modifiers)) setters.put(mapper.apply(field.getName()).toLowerCase(), field::set);
         }
 
         // Find public setters and getters
@@ -124,6 +124,13 @@ public final class ObjectDescriptor<T> {
 
     public ObjectBinder<T> binder(ReadonlyStatement statement) {
         return new ObjectBinder<>(statement, getters);
+    }
+
+    public ObjectBinder<T> binder(ReadonlyStatement statement, Collection<String> columns) {
+        LinkedHashMap<String, Getter> columnGetters = new LinkedHashMap<>(getters);
+        columnGetters.keySet().retainAll(columns);
+
+        return new ObjectBinder<>(statement, columnGetters);
     }
 
     public void bindAll(Statement statement, Iterable<T> objects) {
