@@ -3,13 +3,11 @@ package com.devexed.dalwit.jdbc;
 import com.devexed.dalwit.*;
 import com.devexed.dalwit.util.AbstractCloseable;
 
-import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -156,7 +154,7 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
                 binders.add(binder(Query.parameterListIndexer(parameter, i)));
             }
 
-            return new JdbcListBinder<>(binders);
+            return new ListBinder<>(binders);
         }
     }
 
@@ -198,52 +196,6 @@ final class JdbcStatement extends AbstractCloseable implements Statement {
                 for (int index : indices) accessor.set(statement, index, value);
             } catch (SQLException e) {
                 throw new DatabaseException(e);
-            }
-        }
-
-    }
-
-    private static final class JdbcListBinder<T> implements Binder<T> {
-
-        private static final String countMismatchError = "List value must have exactly %d elements to match the declared parameter type";
-
-        private final ArrayList<Binder<Object>> binders;
-
-        private JdbcListBinder(ArrayList<Binder<Object>> binders) {
-            this.binders = binders;
-        }
-
-        @Override
-        public void bind(T value) {
-            if (value == null) return;
-
-            Class<?> valueType = value.getClass();
-
-            if (Collection.class.isAssignableFrom(valueType)) {
-                Collection values = (Collection) value;
-
-                if (values.size() != binders.size()) {
-                    throw new DatabaseException(String.format(countMismatchError, values.size()));
-                }
-
-                int i = 0;
-
-                for (Object object : values) {
-                    binders.get(i).bind(object);
-                    i++;
-                }
-            } else if (valueType.isArray()) {
-                int length = Array.getLength(value);
-
-                if (length != binders.size()) {
-                    throw new DatabaseException(String.format(countMismatchError, length));
-                }
-
-                for (int i = 0; i < length; i++) {
-                    binders.get(i).bind(Array.get(value, i));
-                }
-            } else {
-                throw new DatabaseException("Expected iterable type, was " + valueType);
             }
         }
 

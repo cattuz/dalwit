@@ -73,7 +73,7 @@ public final class ResultSetCursor extends AbstractCloseable implements Cursor {
         super.close();
     }
 
-    static final class ResultSetGetter implements Cursor.Getter {
+    static final class ResultSetGetter implements Cursor.Getter<Object> {
 
         private final Accessor<PreparedStatement, ResultSet, SQLException> accessor;
         private final ResultSet resultSet;

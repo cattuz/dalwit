@@ -1,13 +1,11 @@
-package com.devexed.dalwit.jdbc;
+package com.devexed.dalwit;
 
 import com.devexed.dalwit.util.SnakeCaseConverter;
-
-import java.util.function.Function;
 
 /**
  * Function which maps snake_case names into camelCase.
  */
-public final class DefaultJdbcColumnNameMapper implements JdbcColumnNameMapper {
+public final class DefaultColumnNameMapper implements ColumnNameMapper {
 
     @Override
     public String apply(String s) {

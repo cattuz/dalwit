@@ -6,7 +6,6 @@ import com.devexed.dalwit.util.AbstractCloseable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Function;
 
 abstract class JdbcAbstractDatabase extends AbstractCloseable implements Database {
 
@@ -14,7 +13,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
     final java.sql.Connection connection;
     final AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory;
     final JdbcGeneratedKeysSelector generatedKeysSelector;
-    final JdbcColumnNameMapper columnNameMapper;
+    final ColumnNameMapper columnNameMapper;
 
     private JdbcTransaction child = null;
 
@@ -22,7 +21,7 @@ abstract class JdbcAbstractDatabase extends AbstractCloseable implements Databas
                          java.sql.Connection connection,
                          AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                          JdbcGeneratedKeysSelector generatedKeysSelector,
-                         JdbcColumnNameMapper columnNameMapper) {
+                         ColumnNameMapper columnNameMapper) {
         this.readonly = readonly;
         this.connection = connection;
         this.accessorFactory = accessorFactory;

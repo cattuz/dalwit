@@ -6,14 +6,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Function;
 
 public final class JdbcDatabase extends JdbcAbstractDatabase {
 
     public JdbcDatabase(boolean readonly, Connection connection,
                         AccessorFactory<PreparedStatement, ResultSet, SQLException> accessorFactory,
                         JdbcGeneratedKeysSelector generatedKeysSelector,
-                        JdbcColumnNameMapper columnNameMapper) {
+                        ColumnNameMapper columnNameMapper) {
         super(readonly, connection, accessorFactory, generatedKeysSelector, columnNameMapper);
     }
 

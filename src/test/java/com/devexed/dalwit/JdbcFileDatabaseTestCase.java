@@ -1,7 +1,6 @@
 package com.devexed.dalwit;
 
 import com.devexed.dalwit.jdbc.DefaultJdbcAccessorFactory;
-import com.devexed.dalwit.jdbc.DefaultJdbcColumnNameMapper;
 import com.devexed.dalwit.jdbc.JdbcConnection;
 import com.devexed.dalwit.jdbc.JdbcGeneratedKeysSelector;
 
@@ -32,7 +31,7 @@ public abstract class JdbcFileDatabaseTestCase extends DatabaseTestCase {
     public Connection createConnection() {
         try {
             file = File.createTempFile("test." + name, ".db");
-            return new JdbcConnection(driver, prefix + file.getAbsolutePath(), new Properties(), accessorFactory, selector, new DefaultJdbcColumnNameMapper());
+            return new JdbcConnection(driver, prefix + file.getAbsolutePath(), new Properties(), accessorFactory, selector, new DefaultColumnNameMapper());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
