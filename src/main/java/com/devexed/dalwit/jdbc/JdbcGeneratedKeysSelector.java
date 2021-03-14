@@ -1,12 +1,9 @@
 package com.devexed.dalwit.jdbc;
 
-import com.devexed.dalwit.AccessorFactory;
 import com.devexed.dalwit.Cursor;
-import com.devexed.dalwit.Database;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
