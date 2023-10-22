@@ -9,6 +9,11 @@ compileJava {
     targetCompatibility = '1.8'
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 repositories {
     mavenCentral()
 }
@@ -23,17 +28,15 @@ configurations {
     testArtifacts.extendsFrom testRuntime
 }
 
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
     from javadoc
 }
 
-task sourceJar(type: Jar) {
-    classifier "sources"
+tasks.register('sourceJar', Jar) {
     from sourceSets.main.allSource
 }
 
-task testJar(type: Jar) {
-    classifier "tests"
+tasks.register('testJar', Jar) {
     from sourceSets.test.output
 }
 
