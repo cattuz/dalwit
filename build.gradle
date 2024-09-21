@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.11'
+    testImplementation 'junit:junit:4.13'
     testImplementation 'org.xerial:sqlite-jdbc:3.34.0'
     testImplementation 'com.h2database:h2:1.4.193'
 }
@@ -23,17 +23,17 @@ configurations {
     testArtifacts.extendsFrom testRuntime
 }
 
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
     from javadoc
 }
 
-task sourceJar(type: Jar) {
-    classifier "sources"
+tasks.register('sourceJar', Jar) {
+    setArchiveClassifier "sources"
     from sourceSets.main.allSource
 }
 
-task testJar(type: Jar) {
-    classifier "tests"
+tasks.register('testJar', Jar) {
+    setArchiveClassifier "tests"
     from sourceSets.test.output
 }
 
@@ -45,4 +45,9 @@ publishing {
             artifact(testJar)
         }
     }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
